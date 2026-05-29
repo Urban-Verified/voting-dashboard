@@ -55,7 +55,7 @@ export function VerifyAggregatePanel({ aggregate, onDownloadFixture, downloading
 
       <div className="vpBody">
         <p className="vpIntro">
-          {t("Confirm that the on-chain aggregate is exactly the homomorphic sum of every accepted ballot — no ballot added twice, none omitted.")}
+          {t("Confirm that the on-chain aggregate is exactly the homomorphic sum of every accepted ballot · no ballot added twice, none omitted.")}
         </p>
 
         <div className="vpStep">
@@ -63,7 +63,7 @@ export function VerifyAggregatePanel({ aggregate, onDownloadFixture, downloading
           <div className="vpStepContent">
             <div className="vpStepTitle">{t("Download the aggregate fixture")}</div>
             <p className="vpStepDesc">
-              {t("Contains every accepted ballot's ciphertext points and the published on-chain aggregate. All ballots are fetched from the chain — may take a moment.")}
+              {t("Contains every accepted ballot's ciphertext points and the published on-chain aggregate. All ballots are fetched from the chain · may take a moment.")}
             </p>
             <button
               type="button"

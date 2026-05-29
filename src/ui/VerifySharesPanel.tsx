@@ -94,7 +94,7 @@ export function VerifySharesPanel({ overview, aggregate, shares, selectedElectio
 
       <div className="vpBody">
         <p className="vpIntro">
-          {t("Confirm that each keyper's decryption share is cryptographically bound to their committee public key. A DLEQ proof is published alongside every share — verify it yourself to rule out fabricated or corrupted shares.")}
+          {t("Confirm that each keyper's decryption share is cryptographically bound to their committee public key. A DLEQ proof is published alongside every share · verify it yourself to rule out fabricated or corrupted shares.")}
         </p>
 
         <div className="vpStep">
@@ -151,7 +151,7 @@ export function VerifySharesPanel({ overview, aggregate, shares, selectedElectio
             <div className="vpCheckItem">
               <div className="vpCheckName">{t("Per-keyper, per-candidate")}</div>
               <div className="vpCheckDesc">
-                {t("Every keyper must submit one valid share per candidate ciphertext. All shares are checked independently — a single bad share is flagged.")}
+                {t("Every keyper must submit one valid share per candidate ciphertext. All shares are checked independently · a single bad share is flagged.")}
               </div>
             </div>
           </div>

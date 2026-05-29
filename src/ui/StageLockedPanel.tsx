@@ -12,9 +12,9 @@ export type WaitingOnStage = {
 const LOCKED_HINT: Record<number, string> = {
   1: "The guardian committee must finish distributed key generation before voting can begin.",
   2: "Once voting opens, accepted ballots will appear here with automatic validity checks. Until then, this registry stays empty.",
-  3: "Once voting closes, the homomorphic sum of every accepted ballot will appear here as one (c1, c2) ciphertext pair per candidate — still encrypted, ready for threshold decryption.",
-  4: "Once the aggregate is published, a table of decryption shares and DLEQ proofs will appear here — one row per keyper, one share per candidate.",
-  5: "Once a threshold of keyper shares is combined, the decrypted vote count per candidate will appear here — together with the winner and the final per-candidate pie chart.",
+  3: "Once voting closes, the homomorphic sum of every accepted ballot will appear here as one (c1, c2) ciphertext pair per candidate · still encrypted, ready for threshold decryption.",
+  4: "Once the aggregate is published, a table of decryption shares and DLEQ proofs will appear here · one row per keyper, one share per candidate.",
+  5: "Once a threshold of keyper shares is combined, the decrypted vote count per candidate will appear here · together with the winner and the final per-candidate pie chart.",
 };
 
 type Props = {

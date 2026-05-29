@@ -82,7 +82,7 @@ export function BallotDetail({ ballot, globalIndex, verifyState, onBack, onVerif
             <>
               <div className="bdStatusTitle">{t("VALID")}</div>
               <div className="bdStatusDesc">
-                {t("All cryptographic checks passed — WR attestation, ZK proofs, voter signature, field decoding.")}
+                {t("All cryptographic checks passed · WR attestation, ZK proofs, voter signature, field decoding.")}
               </div>
             </>
           )}
@@ -157,7 +157,7 @@ export function BallotDetail({ ballot, globalIndex, verifyState, onBack, onVerif
       <div className="verifyYourselfSection">
         <div className="verifyYourselfLabel">{t("VERIFY YOURSELF")}</div>
           <p className="verifyYourselfDesc">
-            {t("Don't trust this panel — re-run the same cryptographic check yourself, against this stage's on-chain data, on your own machine.")}
+            {t("Don't trust this panel · re-run the same cryptographic check yourself, against this stage's on-chain data, on your own machine.")}
           </p>
           <button type="button" className="verifyYourselfBtn" onClick={onVerifyLocally}>
             {t("Open manual verification guide →")}

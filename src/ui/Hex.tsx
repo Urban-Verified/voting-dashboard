@@ -68,7 +68,7 @@ export function trimMiddle(value: string, trim = 6): string {
 /**
  * Renders hex with optional middle ellipsis. Always offers **Copy** for the
  * full `value` (not the trimmed preview) so long proofs / ciphertexts are
- * one-click copyable — `title` alone is not selectable in most browsers.
+ * one-click copyable · `title` alone is not selectable in most browsers.
  */
 export function Hex({
   value,

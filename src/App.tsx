@@ -995,8 +995,8 @@ export default function App() {
         <div className="verifyYourselfLabel">{t("VERIFY YOURSELF")}</div>
         <p className="verifyYourselfDesc">
           {available
-            ? t("Don't trust this panel — re-run the same cryptographic check yourself, against this stage's on-chain data, on your own machine.")
-            : t("Once this stage completes, you'll be able to re-run its cryptographic check on your own machine — same code, same fixtures, no trust in the dashboard required.")}
+            ? t("Don't trust this panel · re-run the same cryptographic check yourself, against this stage's on-chain data, on your own machine.")
+            : t("Once this stage completes, you'll be able to re-run its cryptographic check on your own machine · same code, same fixtures, no trust in the dashboard required.")}
         </p>
         <button
           type="button"
@@ -1218,7 +1218,7 @@ export default function App() {
                   })} <span className="elecHeaderStatDesc">{t("must agree")}</span>
                 </div>
                 <div className="elecHeaderStatDesc">
-                  {t("An independent committee. Only when {{t}} of them combine their keys can the result be decrypted — no single guardian can ever see the votes alone.", {
+                  {t("An independent committee. Only when {{t}} of them combine their keys can the result be decrypted · no single guardian can ever see the votes alone.", {
                     t: overview.config.thresholdT.toString(),
                   })}
                 </div>
@@ -1226,7 +1226,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Persistent content: HOW + CURRENTLY — always visible above tab bar */}
+          {/* Persistent content: HOW + CURRENTLY · always visible above tab bar */}
           <div className="persistentOverviewContent">
 
             {/* HOW THIS ELECTION IS KEPT HONEST + status row (line grid, no card boxes) */}
@@ -1238,7 +1238,7 @@ export default function App() {
                 <div className="overviewHonestCell trustCard">
                   <div className="trustCardTitle">{t("Every step is public, signed, and cryptographically proven.")}</div>
                   <div className="trustCardDesc">
-                    {t("Every action on this election — key setup, ballot submission, counting, decryption — is recorded on-chain with a signature and a")}
+                    {t("Every action on this election · key setup, ballot submission, counting, decryption · is recorded on-chain with a signature and a")}
                     {" "}
                     <Term id="zero-knowledge proof">{t("zero-knowledge proof")}</Term>{" "}
                     {t("of correctness. Anyone, including you, can re-run any proof to confirm.")}
@@ -1624,7 +1624,7 @@ export default function App() {
                               ))}
                             </div>
                             <p className="dim helpFootnote" style={{ marginTop: 20 }}>
-                              {t("The aggregate is the encrypted combined vote per candidate: every accepted ballot ciphertext is added together (homomorphic encrypted sum). You still only see ciphertexts here — the actual vote counts stay hidden until keypers submit decryption shares.")}
+                              {t("The aggregate is the encrypted combined vote per candidate: every accepted ballot ciphertext is added together (homomorphic encrypted sum). You still only see ciphertexts here · the actual vote counts stay hidden until keypers submit decryption shares.")}
                             </p>
                           </>
                         )}
@@ -1746,7 +1746,7 @@ export default function App() {
                         ))}
                         </div>
                         <p className="dim helpFootnote" style={{ marginTop: 16 }}>
-                          {t("Verify DLEQ checks that a keyper's decryption share matches the published aggregate ciphertext and that keyper's committee public key — their piece of the decryption was computed correctly, without exposing private key material.")}
+                          {t("Verify DLEQ checks that a keyper's decryption share matches the published aggregate ciphertext and that keyper's committee public key · their piece of the decryption was computed correctly, without exposing private key material.")}
                         </p>
                         </>)}
                         {renderVerifySection(4)}

@@ -15,19 +15,19 @@ const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   "budget": {
     title: "Budget",
-    body: "The number of points each voter has to distribute. With a budget of 3, you might give 3 to one candidate, or 1+1+1 across three, or 2+1, etc. Each per-candidate value must stay within range — the ZK range proof guarantees this.",
+    body: "The number of points each voter has to distribute. With a budget of 3, you might give 3 to one candidate, or 1+1+1 across three, or 2+1, etc. Each per-candidate value must stay within range · the ZK range proof guarantees this.",
   },
   "zero-knowledge proof": {
     title: "Zero-knowledge Proof",
-    body: "Math that lets one party prove a statement is true without revealing the underlying secret. Here, it proves things like 'this vote is in range' or 'this decryption share is correct' — without revealing the vote or the secret share.",
+    body: "Math that lets one party prove a statement is true without revealing the underlying secret. Here, it proves things like 'this vote is in range' or 'this decryption share is correct' · without revealing the vote or the secret share.",
   },
   "homomorphic tallying": {
     title: "Homomorphic tallying",
-    body: "Homomorphic aggregation — adding encrypted values together so the result is the encryption of the sum. The contract never sees individual votes, only the encrypted total.",
+    body: "Homomorphic aggregation · adding encrypted values together so the result is the encryption of the sum. The contract never sees individual votes, only the encrypted total.",
   },
   DLEQ: {
     title: "DLEQ proof",
-    body: "Discrete-log equality proof — a tiny piece of math each keyper publishes alongside their decryption share. It proves the share matches their committee public key, so a bad share can't slip through.",
+    body: "Discrete-log equality proof · a tiny piece of math each keyper publishes alongside their decryption share. It proves the share matches their committee public key, so a bad share can't slip through.",
   },
   keypers: {
     title: "Keypers",
@@ -39,15 +39,15 @@ const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   ElGamal: {
     title: "ElGamal Encryption",
-    body: "Threshold ElGamal in G₂ — ciphertexts (c1, c2) can be added homomorphically. The encryption of a sum equals the sum of encryptions. That's what lets us add ballots together while they stay encrypted.",
+    body: "Threshold ElGamal in G₂ · ciphertexts (c1, c2) can be added homomorphically. The encryption of a sum equals the sum of encryptions. That's what lets us add ballots together while they stay encrypted.",
   },
   "Schnorr signature": {
     title: "Schnorr Signature",
-    body: "A compact digital signature on G₁ used here by voters (and the whitelist registrar) to authenticate ballot bytes — proving they created it without revealing any private key material.",
+    body: "A compact digital signature on G₁ used here by voters (and the whitelist registrar) to authenticate ballot bytes · proving they created it without revealing any private key material.",
   },
   "Lagrange interpolation": {
     title: "Lagrange interpolation",
-    body: "Lagrange combination — the standard way to reconstruct a value from t-of-n shares. We use it on the decryption side so no one ever assembles the full private key in memory.",
+    body: "Lagrange combination · the standard way to reconstruct a value from t-of-n shares. We use it on the decryption side so no one ever assembles the full private key in memory.",
   },
   "ciphertext": {
     title: "Ciphertext",
@@ -59,7 +59,7 @@ const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   "baby-step / giant-step": {
     title: "Baby-step / Giant-step",
-    body: "An algorithm that efficiently recovers a small plaintext integer from a discrete-log in G₂ — used to decode the vote count after threshold decryption.",
+    body: "An algorithm that efficiently recovers a small plaintext integer from a discrete-log in G₂ · used to decode the vote count after threshold decryption.",
   },
   "keyper": {
     title: "Keyper",
@@ -75,15 +75,15 @@ const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   "Threshold": {
     title: "Threshold",
-    body: "How many of the N committee members must combine their pieces before anything can be decrypted. With 3 of 5, any three of the five working together is enough — but two or fewer learn nothing.",
+    body: "How many of the N committee members must combine their pieces before anything can be decrypted. With 3 of 5, any three of the five working together is enough · but two or fewer learn nothing.",
   },
   "Election Public Key": {
     title: "Election Public Key",
-    body: "The public key that voters use to encrypt their ballots. Anyone can encrypt with it; only the keyper committee — acting together — can ever decrypt anything with it.",
+    body: "The public key that voters use to encrypt their ballots. Anyone can encrypt with it; only the keyper committee · acting together · can ever decrypt anything with it.",
   },
   "Election public key": {
     title: "Election Public Key",
-    body: "The public key that voters use to encrypt their ballots. Anyone can encrypt with it; only the keyper committee — acting together — can ever decrypt anything with it.",
+    body: "The public key that voters use to encrypt their ballots. Anyone can encrypt with it; only the keyper committee · acting together · can ever decrypt anything with it.",
   },
   "Whitelist Registrar": {
     title: "Whitelist Registrar",
@@ -103,7 +103,7 @@ const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   "Homomorphic Aggregation": {
     title: "Homomorphic Aggregation",
-    body: "Homomorphic aggregation — adding encrypted values together so the result is the encryption of the sum. The contract never sees individual votes, only the encrypted total.",
+    body: "Homomorphic aggregation · adding encrypted values together so the result is the encryption of the sum. The contract never sees individual votes, only the encrypted total.",
   },
   "Encrypted Ballot Submission": {
     title: "Encrypted Ballot Submission",

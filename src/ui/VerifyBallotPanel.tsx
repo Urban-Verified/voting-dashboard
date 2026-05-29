@@ -23,7 +23,7 @@ export function VerifyBallotPanel({ ballot, globalIndex, overview, selectedElect
       electionId: overview.config.electionId.toString(),
       numCandidates: overview.config.numCandidates,
       budget: overview.config.budget,
-      // Munich defaults — adjust if election uses atMost mode or Variant B
+      // Munich defaults · adjust if election uses atMost mode or Variant B
       mode: "exact",
       variant: "A",
       ballots: [ballot],
@@ -150,7 +150,7 @@ export function VerifyBallotPanel({ ballot, globalIndex, overview, selectedElect
             <div className="vpCheckItem">
               <div className="vpCheckName">{t("ZK range proofs")}</div>
               <div className="vpCheckDesc">
-                {t("For each candidate, a zero-knowledge proof shows the encrypted vote is within the allowed budget — no over-voting, without revealing the actual choice.")}
+                {t("For each candidate, a zero-knowledge proof shows the encrypted vote is within the allowed budget · no over-voting, without revealing the actual choice.")}
               </div>
             </div>
             <div className="vpCheckItem">
@@ -162,7 +162,7 @@ export function VerifyBallotPanel({ ballot, globalIndex, overview, selectedElect
             <div className="vpCheckItem">
               <div className="vpCheckName">{t("Field decoding")}</div>
               <div className="vpCheckDesc">
-                {t("vk and Schnorr components are decoded as compressed G₁ points (48 bytes); ciphertexts (c1, c2) and the election public key as G₂ (96 bytes) — all subgroup-checked before verification runs.")}
+                {t("vk and Schnorr components are decoded as compressed G₁ points (48 bytes); ciphertexts (c1, c2) and the election public key as G₂ (96 bytes) · all subgroup-checked before verification runs.")}
               </div>
             </div>
           </div>

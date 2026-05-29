@@ -106,7 +106,7 @@ export function VerifyResultPanel({ overview, aggregate, shares, result, totalBa
 
       <div className="vpBody">
         <p className="vpIntro">
-          {t("Independently decrypt the aggregate using the keyper shares and reproduce the published vote counts yourself. If your numbers match, the tally is genuine — no trust in the dashboard required.")}
+          {t("Independently decrypt the aggregate using the keyper shares and reproduce the published vote counts yourself. If your numbers match, the tally is genuine · no trust in the dashboard required.")}
         </p>
 
         <div className="vpStep">
