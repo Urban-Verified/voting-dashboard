@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light" />
     <title>Online Wahlen — Personalrat München</title>
+    <!-- Pre-load BLST so window.blst is defined before the SDK chunk runs.
+         The bundled SDK otherwise injects <script src="/blst.js"> at an
+         absolute path, which 404s under a non-root base (GitHub Pages). -->
+    <script src="%BASE_URL%blst.js"></script>
   </head>
   <body>
     <div id="root"></div>
