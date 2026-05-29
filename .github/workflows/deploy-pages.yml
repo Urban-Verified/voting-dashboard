@@ -41,8 +41,17 @@ jobs:
           VITE_ELECTION_REGISTRY: ${{ vars.VITE_ELECTION_REGISTRY }}
         run: npm run build
 
+      # The Vite-bundled SDK chunk lives in dist/assets/ and fetches
+      # 'blst.wasm' relative to its own URL, so the WASM must sit next
+      # to it (the copy in dist/blst.wasm from public/ is unused at
+      # runtime but kept for local dev parity).
+      - name: Place BLST WASM next to the Vite-bundled chunk
+        run: |
+          UVC=node_modules/@shutter-network/urban-verified-crypto/dist
+          cp -f "$UVC/blst.wasm" dist/assets/blst.wasm
+
       - name: Verify BLST assets are in dist/
-        run: ls -la dist/blst.wasm dist/blst.js
+        run: ls -la dist/blst.wasm dist/blst.js dist/assets/blst.wasm
 
       - uses: actions/configure-pages@v5
 
