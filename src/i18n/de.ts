@@ -246,6 +246,19 @@ export const de: Record<string, string> = {
   "Copy pseudonym": "Pseudonym kopieren",
   "Copy DLEQ proof": "DLEQ-Beweis kopieren",
 
+  // ── STAGE_TECH ("What this means technically" rich text) ────────────────
+  // Indices in <N> map to the `components` prop array passed to <Trans>.
+  "STAGE_TECH_DKG":
+    "Eine <0>t-von-n Schwelle</0>-<1>DKG</1> erzeugt einen gemeinsamen öffentlichen Schlüssel in G₂, dessen privates Gegenstück in n geheime Anteile aufgeteilt wird, einen pro <2>Keyper</2>. Beliebige t von ihnen zusammen können entschlüsseln, weniger nicht. Komitee-Schlüssel und Stimmen verwenden <3>BLS12-381</3>.",
+  "STAGE_TECH_BALLOTS":
+    "Stimmen tragen pro Kandidat:in einen <0>ElGamal</0>-<1>Chiffretext</1>, eine G₁-<2>Schnorr-Signatur</2> über die Stimm-Bytes, eine G₁-<3>Whitelist-Registrar</3>-Attestierung, dass die wählende Person auf der registrierten Liste steht, und <4>ZK-Bereichsbeweise</4>, dass jede Stimme innerhalb des Wahl-<5>Budgets</5> liegt. Alles auf <6>BLS12-381</6>.",
+  "STAGE_TECH_AGGREGATE":
+    "Komponentenweise Addition jedes angenommenen Stimm-<0>Chiffretexts</0> auf <1>BLS12-381</1> G₂ (c1 und c2 werden jeweils einzeln punktweise addiert). Das Aggregat ist ein (c1, c2)-Paar pro Kandidat:in. Es wird kein privates Schlüsselmaterial berührt.",
+  "STAGE_TECH_SHARES":
+    "Jeder <0>Keyper</0> veröffentlicht eine partielle Entschlüsselung σ_i = s_i · C₁ auf dem Aggregat-Chiffretext pro Kandidat:in, wobei s_i sein geheimer Anteil ist. Ein nicht-interaktiver <1>DLEQ-Beweis</1> bindet σ_i an den öffentlichen Komitee-Schlüssel (G₂). Beliebige t gültige Anteile werden per <2>Lagrange kombiniert</2> zum Entschlüsselungsfaktor, ohne jemals einen privaten Schlüssel zusammenzusetzen.",
+  "STAGE_TECH_RESULT":
+    "Der <0>Lagrange-kombinierte</0> Entschlüsselungsfaktor entfernt die Verschlüsselungsmaske vom Aggregat-<1>Chiffretext</1> jeder/jedes Kandidat:in (G₂). Eine begrenzte <2>Baby-Step / Giant-Step</2>-Suche in G₂ gewinnt die Stimmzahl pro Kandidat:in als Ganzzahl zurück.",
+
   // ── Footer ──────────────────────────────────────────────────────────────
   "Developed for City of Munich": "Entwickelt für die Stadt München",
   "Powered by Bundeswehr Universität München × Votebase × brainbot/Shutter":

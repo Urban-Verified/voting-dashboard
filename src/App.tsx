@@ -38,7 +38,7 @@ import { Term } from "./ui/Term";
 import { StageLifecycleBadge } from "./ui/StageLifecycleBadge";
 import { StageLockedPanel, type WaitingOnStage } from "./ui/StageLockedPanel";
 import { LanguageToggle } from "./ui/LanguageToggle";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import {
   applyCachedVerifyForBallots,
@@ -927,11 +927,70 @@ export default function App() {
 
   const STAGE_TECH: Record<Tab, ReactNode> = {
     overview: "",
-    dkg: <>A <Term id="t-of-n threshold">t-of-n threshold</Term> <Term id="DKG">DKG</Term> produces a shared public key in G₂ whose private counterpart is split into n secret shares, one per <Term id="keyper">keyper</Term>. Any t of them together can decrypt; fewer cannot. Committee keys and ballots use <Term id="BLS12-381">BLS12-381</Term>.</>,
-    ballots: <>Ballots carry <Term id="ElGamal">ElGamal</Term> <Term id="ciphertext">ciphertexts</Term> per candidate, a G₁ <Term id="Schnorr signature">Schnorr signature</Term> over the ballot bytes, a G₁ <Term id="Whitelist Registrar">Whitelist Registrar</Term> attestation that the voter is on the registered list, and <Term id="zero-knowledge proof">ZK range proofs</Term> that each vote is within the election <Term id="budget">budget</Term>. All on <Term id="BLS12-381">BLS12-381</Term>.</>,
-    aggregate: <>Component-wise addition of every accepted ballot <Term id="ciphertext">ciphertext</Term> on <Term id="BLS12-381">BLS12-381</Term> G₂ (each c1 and c2 is point-added separately). The aggregate is one (c1, c2) pair per candidate. No private key material is touched.</>,
-    shares: <>Each <Term id="keyper">keyper</Term> publishes a partial decryption σ_i = s_i · C₁ on the aggregate ciphertext per candidate, where s_i is their secret share. A non-interactive <Term id="DLEQ">DLEQ proof</Term> binds σ_i to their committee public key (G₂). Any t valid shares are <Term id="Lagrange interpolation">Lagrange-combined</Term> into the decryption factor without ever assembling a private key.</>,
-    result: <>The <Term id="Lagrange interpolation">Lagrange-combined</Term> decryption factor removes the encryption mask from each candidate&apos;s aggregate <Term id="ciphertext">ciphertext</Term> (G₂). A bounded <Term id="baby-step / giant-step">baby-step / giant-step</Term> in G₂ recovers the integer vote count per candidate.</>,
+    dkg: (
+      <Trans
+        i18nKey="STAGE_TECH_DKG"
+        components={[
+          <Term id="t-of-n threshold" />,
+          <Term id="DKG" />,
+          <Term id="keyper" />,
+          <Term id="BLS12-381" />,
+        ]}
+      >
+        A <Term id="t-of-n threshold">t-of-n threshold</Term> <Term id="DKG">DKG</Term> produces a shared public key in G₂ whose private counterpart is split into n secret shares, one per <Term id="keyper">keyper</Term>. Any t of them together can decrypt; fewer cannot. Committee keys and ballots use <Term id="BLS12-381">BLS12-381</Term>.
+      </Trans>
+    ),
+    ballots: (
+      <Trans
+        i18nKey="STAGE_TECH_BALLOTS"
+        components={[
+          <Term id="ElGamal" />,
+          <Term id="ciphertext" />,
+          <Term id="Schnorr signature" />,
+          <Term id="Whitelist Registrar" />,
+          <Term id="zero-knowledge proof" />,
+          <Term id="budget" />,
+          <Term id="BLS12-381" />,
+        ]}
+      >
+        Ballots carry <Term id="ElGamal">ElGamal</Term> <Term id="ciphertext">ciphertexts</Term> per candidate, a G₁ <Term id="Schnorr signature">Schnorr signature</Term> over the ballot bytes, a G₁ <Term id="Whitelist Registrar">Whitelist Registrar</Term> attestation that the voter is on the registered list, and <Term id="zero-knowledge proof">ZK range proofs</Term> that each vote is within the election <Term id="budget">budget</Term>. All on <Term id="BLS12-381">BLS12-381</Term>.
+      </Trans>
+    ),
+    aggregate: (
+      <Trans
+        i18nKey="STAGE_TECH_AGGREGATE"
+        components={[
+          <Term id="ciphertext" />,
+          <Term id="BLS12-381" />,
+        ]}
+      >
+        Component-wise addition of every accepted ballot <Term id="ciphertext">ciphertext</Term> on <Term id="BLS12-381">BLS12-381</Term> G₂ (each c1 and c2 is point-added separately). The aggregate is one (c1, c2) pair per candidate. No private key material is touched.
+      </Trans>
+    ),
+    shares: (
+      <Trans
+        i18nKey="STAGE_TECH_SHARES"
+        components={[
+          <Term id="keyper" />,
+          <Term id="DLEQ" />,
+          <Term id="Lagrange interpolation" />,
+        ]}
+      >
+        Each <Term id="keyper">keyper</Term> publishes a partial decryption σ_i = s_i · C₁ on the aggregate ciphertext per candidate, where s_i is their secret share. A non-interactive <Term id="DLEQ">DLEQ proof</Term> binds σ_i to their committee public key (G₂). Any t valid shares are <Term id="Lagrange interpolation">Lagrange-combined</Term> into the decryption factor without ever assembling a private key.
+      </Trans>
+    ),
+    result: (
+      <Trans
+        i18nKey="STAGE_TECH_RESULT"
+        components={[
+          <Term id="Lagrange interpolation" />,
+          <Term id="ciphertext" />,
+          <Term id="baby-step / giant-step" />,
+        ]}
+      >
+        The <Term id="Lagrange interpolation">Lagrange-combined</Term> decryption factor removes the encryption mask from each candidate&apos;s aggregate <Term id="ciphertext">ciphertext</Term> (G₂). A bounded <Term id="baby-step / giant-step">baby-step / giant-step</Term> in G₂ recovers the integer vote count per candidate.
+      </Trans>
+    ),
   };
 
   function navigateTo(t: Tab) {
