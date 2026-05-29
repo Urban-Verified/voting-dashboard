@@ -28,11 +28,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Copy BLST assets into public/
+        run: |
+          UVC=node_modules/@shutter-network/urban-verified-crypto/dist
+          mkdir -p public
+          cp -f "$UVC/blst.wasm" public/blst.wasm
+          cp -f "$UVC/blst.js"   public/blst.js
+
       - name: Build
         env:
           VITE_RPC_URL: ${{ vars.VITE_RPC_URL }}
           VITE_ELECTION_REGISTRY: ${{ vars.VITE_ELECTION_REGISTRY }}
         run: npm run build
+
+      - name: Verify BLST assets are in dist/
+        run: ls -la dist/blst.wasm dist/blst.js
 
       - uses: actions/configure-pages@v5
 
