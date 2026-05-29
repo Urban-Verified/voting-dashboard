@@ -1,0 +1,39 @@
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "verify-ballot": "node scripts/run-verify-ballot.cjs",
+    "test-verify-ballot-mvp": "npx tsx --tsconfig scripts/tsconfig.verifyBallotMvp.json scripts/test-verifyBallotMvp.ts",
+    "preview": "vite preview",
+    "postinstall": "mkdir -p public && UVC=node_modules/@shutter-network/urban-verified-crypto/dist && cp -f \"$UVC/blst.wasm\" public/blst.wasm && cp -f \"$UVC/blst.js\" public/blst.js"
+  },
+  "dependencies": {
+    "@shutter-network/urban-verified-crypto": "^0.1.1",
+    "echarts": "^5.6.0",
+    "ethers": "^6.15.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "viem": "^2.31.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^20.17.30",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.6.3",
+    "typescript-eslint": "^8.46.4",
+    "vite": "^5.4.14"
+  }
+}
