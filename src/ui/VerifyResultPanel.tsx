@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { DecryptionShare, EncryptedTally, ElectionConfigView, DkgResultView, ElectionResult } from "../eth/types";
 import { CodeBlock } from "./CodeBlock";
 
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export function VerifyResultPanel({ overview, aggregate, shares, result, totalBallots, selectedElection }: Props) {
+  const { t } = useTranslation();
   const fixtureFilename = "result-fixture.json";
   const scriptName = "verify-result.js";
 
@@ -89,27 +91,30 @@ export function VerifyResultPanel({ overview, aggregate, shares, result, totalBa
   const expectedOutput = `${tallyLines}\n\n✓ Tally verified`;
 
   return (
-    <div className="vpInline" role="region" aria-label="Final tally verification guide">
+    <div className="vpInline" role="region" aria-label={t("Final tally verification guide")}>
       <div className="vpInlineHdr">
         <div>
-          <div className="vpHeaderLabel">RE-VERIFY THE FINAL TALLY LOCALLY</div>
-          <div className="vpHeaderSub">{result.tally.length} candidates · {result.tally.reduce((s, c) => s + c, 0n).toString()} total votes</div>
+          <div className="vpHeaderLabel">{t("RE-VERIFY THE FINAL TALLY LOCALLY")}</div>
+          <div className="vpHeaderSub">
+            {t("{{n}} candidates · {{votes}} total votes", {
+              n: result.tally.length,
+              votes: result.tally.reduce((s, c) => s + c, 0n).toString(),
+            })}
+          </div>
         </div>
       </div>
 
       <div className="vpBody">
         <p className="vpIntro">
-          Independently decrypt the aggregate using the keyper shares and reproduce the published vote
-          counts yourself. If your numbers match, the tally is genuine — no trust in the dashboard required.
+          {t("Independently decrypt the aggregate using the keyper shares and reproduce the published vote counts yourself. If your numbers match, the tally is genuine — no trust in the dashboard required.")}
         </p>
 
         <div className="vpStep">
           <div className="vpStepNum">1</div>
           <div className="vpStepContent">
-            <div className="vpStepTitle">Download the result fixture</div>
+            <div className="vpStepTitle">{t("Download the result fixture")}</div>
             <p className="vpStepDesc">
-              Contains the aggregate ciphertexts, all keyper decryption shares, committee public keys,
-              election parameters, and the published tally to compare against.
+              {t("Contains the aggregate ciphertexts, all keyper decryption shares, committee public keys, election parameters, and the published tally to compare against.")}
             </p>
             <button type="button" className="vpDownloadBtn" onClick={downloadFixture}>
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -124,7 +129,7 @@ export function VerifyResultPanel({ overview, aggregate, shares, result, totalBa
         <div className="vpStep">
           <div className="vpStepNum">2</div>
           <div className="vpStepContent">
-            <div className="vpStepTitle">Install the Shutter crypto SDK</div>
+            <div className="vpStepTitle">{t("Install the Shutter crypto SDK")}</div>
             <CodeBlock>{installCmd}</CodeBlock>
           </div>
         </div>
@@ -132,42 +137,39 @@ export function VerifyResultPanel({ overview, aggregate, shares, result, totalBa
         <div className="vpStep">
           <div className="vpStepNum">3</div>
           <div className="vpStepContent">
-            <div className="vpStepTitle">Write and run the verification script</div>
+            <div className="vpStepTitle">{t("Write and run the verification script")}</div>
             <p className="vpStepDesc">
-              Save as <span className="mono">{scriptName}</span> next to the fixture, then run:
+              {t("Save as")} <span className="mono">{scriptName}</span> {t("next to the fixture, then run:")}
             </p>
             <CodeBlock>{scriptCode}</CodeBlock>
             <CodeBlock>{`node ${scriptName}`}</CodeBlock>
-            <div className="vpExpectedLabel">Expected output</div>
+            <div className="vpExpectedLabel">{t("Expected output")}</div>
             <pre className="vpExpectedOutput">{expectedOutput}</pre>
             <p className="vpStepDesc" style={{ marginTop: 8 }}>
-              Exit code 0 = tally reproduced and matches. Exit code 1 = mismatch or insufficient shares.
+              {t("Exit code 0 = tally reproduced and matches. Exit code 1 = mismatch or insufficient shares.")}
             </p>
           </div>
         </div>
 
         <div className="vpSection">
-          <div className="vpSectionLabel">WHAT'S BEING CHECKED</div>
+          <div className="vpSectionLabel">{t("WHAT'S BEING CHECKED")}</div>
           <div className="vpCheckList">
             <div className="vpCheckItem">
-              <div className="vpCheckName">Share validity (DLEQ)</div>
+              <div className="vpCheckName">{t("Share validity (DLEQ)")}</div>
               <div className="vpCheckDesc">
-                Each share is verified against its keyper's committee public key before use.
-                Only shares passing the DLEQ proof are Lagrange-combined.
+                {t("Each share is verified against its keyper's committee public key before use. Only shares passing the DLEQ proof are Lagrange-combined.")}
               </div>
             </div>
             <div className="vpCheckItem">
-              <div className="vpCheckName">Threshold decryption</div>
+              <div className="vpCheckName">{t("Threshold decryption")}</div>
               <div className="vpCheckDesc">
-                The first t verified shares are Lagrange-combined to remove the encryption mask
-                from each candidate's aggregate ciphertext, without ever assembling the full private key.
+                {t("The first t verified shares are Lagrange-combined to remove the encryption mask from each candidate's aggregate ciphertext, without ever assembling the full private key.")}
               </div>
             </div>
             <div className="vpCheckItem">
-              <div className="vpCheckName">Baby-step / giant-step</div>
+              <div className="vpCheckName">{t("Baby-step / giant-step")}</div>
               <div className="vpCheckDesc">
-                After decryption, a discrete-log solver recovers the integer vote count from a G₂
-                point. The search space is bounded by totalBallots × budget.
+                {t("After decryption, a discrete-log solver recovers the integer vote count from a G₂ point. The search space is bounded by totalBallots × budget.")}
               </div>
             </div>
           </div>

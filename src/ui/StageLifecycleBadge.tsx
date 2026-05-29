@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 export type StageLifecycle = "done" | "in_progress" | "pending";
 
 function HourglassIcon({ small }: { small?: boolean }) {
@@ -27,17 +29,18 @@ export function StageLifecycleBadge({
   lifecycle: StageLifecycle;
   small?: boolean;
 }) {
+  const { t } = useTranslation();
   const base = small ? "stageBadge stageBadge--sm" : "stageBadge";
   if (lifecycle === "done") {
-    return <span className={`${base} stageBadge--done`}>✓ DONE</span>;
+    return <span className={`${base} stageBadge--done`}>{t("✓ DONE")}</span>;
   }
   if (lifecycle === "in_progress") {
     return (
       <span className={`${base} stageBadge--progress`}>
         <HourglassIcon small={small} />
-        IN PROGRESS
+        {t("IN PROGRESS")}
       </span>
     );
   }
-  return <span className={`${base} stageBadge--pending`}>PENDING</span>;
+  return <span className={`${base} stageBadge--pending`}>{t("PENDING")}</span>;
 }

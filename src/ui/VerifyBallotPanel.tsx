@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { Ballot, ElectionConfigView, DkgResultView } from "../eth/types";
 import { CodeBlock } from "./CodeBlock";
 
@@ -11,6 +12,7 @@ type Props = {
 };
 
 export function VerifyBallotPanel({ ballot, globalIndex, overview, selectedElection }: Props) {
+  const { t } = useTranslation();
   const fixtureFilename = `ballot-${globalIndex}-fixture.json`;
   const scriptName = `verify-ballot-${globalIndex}.js`;
 
@@ -78,26 +80,25 @@ export function VerifyBallotPanel({ ballot, globalIndex, overview, selectedElect
   const runCmd = `node ${scriptName}`;
 
   return (
-    <div className="vpInline" role="region" aria-label="Local verification guide">
+    <div className="vpInline" role="region" aria-label={t("Local verification guide")}>
       <div className="vpInlineHdr">
         <div>
-          <div className="vpHeaderLabel">RE-VERIFY THIS BALLOT LOCALLY</div>
-          <div className="vpHeaderSub">Ballot Index {globalIndex}</div>
+          <div className="vpHeaderLabel">{t("RE-VERIFY THIS BALLOT LOCALLY")}</div>
+          <div className="vpHeaderSub">{t("Ballot Index {{n}}", { n: globalIndex })}</div>
         </div>
       </div>
 
       <div className="vpBody">
         <p className="vpIntro">
-          Run the same cryptographic checks the dashboard performs, on your own machine,
-          against this specific ballot. A clean local check means you don't need to trust the dashboard.
+          {t("Run the same cryptographic checks the dashboard performs, on your own machine, against this specific ballot. A clean local check means you don't need to trust the dashboard.")}
         </p>
 
         <div className="vpStep">
           <div className="vpStepNum">1</div>
           <div className="vpStepContent">
-            <div className="vpStepTitle">Download this ballot's fixture</div>
+            <div className="vpStepTitle">{t("Download this ballot's fixture")}</div>
             <p className="vpStepDesc">
-              A self-contained JSON file with all election parameters and this ballot only.
+              {t("A self-contained JSON file with all election parameters and this ballot only.")}
             </p>
             <button type="button" className="vpDownloadBtn" onClick={downloadFixture}>
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -112,7 +113,7 @@ export function VerifyBallotPanel({ ballot, globalIndex, overview, selectedElect
         <div className="vpStep">
           <div className="vpStepNum">2</div>
           <div className="vpStepContent">
-            <div className="vpStepTitle">Install the Shutter crypto SDK</div>
+            <div className="vpStepTitle">{t("Install the Shutter crypto SDK")}</div>
             <CodeBlock>{installCmd}</CodeBlock>
           </div>
         </div>
@@ -120,52 +121,48 @@ export function VerifyBallotPanel({ ballot, globalIndex, overview, selectedElect
         <div className="vpStep">
           <div className="vpStepNum">3</div>
           <div className="vpStepContent">
-            <div className="vpStepTitle">Write and run a verification script</div>
+            <div className="vpStepTitle">{t("Write and run a verification script")}</div>
             <p className="vpStepDesc">
-              Save as <span className="mono">{scriptName}</span> in the same directory as the fixture, then run:
+              {t("Save as")} <span className="mono">{scriptName}</span> {t("in the same directory as the fixture, then run:")}
             </p>
             <CodeBlock>{scriptCode}</CodeBlock>
             <CodeBlock>{runCmd}</CodeBlock>
-            <div className="vpExpectedLabel">Expected output</div>
+            <div className="vpExpectedLabel">{t("Expected output")}</div>
             <pre className="vpExpectedOutput">✓ VALID</pre>
             <p className="vpStepDesc" style={{ marginTop: 8 }}>
-              Exit code 0 = all checks passed. Exit code 1 = ballot is invalid.
+              {t("Exit code 0 = all checks passed. Exit code 1 = ballot is invalid.")}
             </p>
           </div>
         </div>
 
         <div className="vpSection">
-          <div className="vpSectionLabel">WHAT'S BEING CHECKED</div>
+          <div className="vpSectionLabel">{t("WHAT'S BEING CHECKED")}</div>
           <div className="vpCheckList">
             <div className="vpCheckItem">
-              <div className="vpCheckName">WR attestation</div>
+              <div className="vpCheckName">{t("WR attestation")}</div>
               <div className="vpCheckDesc">
-                The voter's pseudonym is registered for this election.{" "}
+                {t("The voter's pseudonym is registered for this election.")}{" "}
                 <span className="mono" style={{ fontSize: 11 }}>keccak256(electionId ‖ pseudonym ‖ vk)</span>{" "}
-                is signed by the election authority's Schnorr key (pkWR), verified via{" "}
+                {t("is signed by the election authority's Schnorr key (pkWR), verified via")}{" "}
                 <span className="mono" style={{ fontSize: 11 }}>schnorrVerify</span>.
               </div>
             </div>
             <div className="vpCheckItem">
-              <div className="vpCheckName">ZK range proofs</div>
+              <div className="vpCheckName">{t("ZK range proofs")}</div>
               <div className="vpCheckDesc">
-                For each candidate, a zero-knowledge proof shows the encrypted vote is within the
-                allowed budget — no over-voting, without revealing the actual choice.
+                {t("For each candidate, a zero-knowledge proof shows the encrypted vote is within the allowed budget — no over-voting, without revealing the actual choice.")}
               </div>
             </div>
             <div className="vpCheckItem">
-              <div className="vpCheckName">Voter Schnorr signature</div>
+              <div className="vpCheckName">{t("Voter Schnorr signature")}</div>
               <div className="vpCheckDesc">
-                The ballot bytes are bound to the voter's ephemeral public key (vk), preventing
-                replay or modification after submission.
+                {t("The ballot bytes are bound to the voter's ephemeral public key (vk), preventing replay or modification after submission.")}
               </div>
             </div>
             <div className="vpCheckItem">
-              <div className="vpCheckName">Field decoding</div>
+              <div className="vpCheckName">{t("Field decoding")}</div>
               <div className="vpCheckDesc">
-                vk and Schnorr components are decoded as compressed G₁ points (48 bytes); ciphertexts
-                (c1, c2) and the election public key as G₂ (96 bytes) — all subgroup-checked before
-                verification runs.
+                {t("vk and Schnorr components are decoded as compressed G₁ points (48 bytes); ciphertexts (c1, c2) and the election public key as G₂ (96 bytes) — all subgroup-checked before verification runs.")}
               </div>
             </div>
           </div>

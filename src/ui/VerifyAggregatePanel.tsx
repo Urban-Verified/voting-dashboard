@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { EncryptedTally } from "../eth/types";
 import { CodeBlock } from "./CodeBlock";
 
@@ -10,6 +11,7 @@ type Props = {
 };
 
 export function VerifyAggregatePanel({ aggregate, onDownloadFixture, downloading }: Props) {
+  const { t } = useTranslation();
   const fixtureFilename = "aggregate-fixture.json";
   const scriptName = "verify-aggregate.js";
 
@@ -43,27 +45,25 @@ export function VerifyAggregatePanel({ aggregate, onDownloadFixture, downloading
   const expectedOutput = `${candidateLines}\n\n✓ Aggregate verified`;
 
   return (
-    <div className="vpInline" role="region" aria-label="Aggregate verification guide">
+    <div className="vpInline" role="region" aria-label={t("Aggregate verification guide")}>
       <div className="vpInlineHdr">
         <div>
-          <div className="vpHeaderLabel">Reproduce the homomorphic sum</div>
-          <div className="vpHeaderSub">{aggregate.aggregates.length} candidate ciphertexts</div>
+          <div className="vpHeaderLabel">{t("Reproduce the homomorphic sum")}</div>
+          <div className="vpHeaderSub">{t("{{n}} candidate ciphertexts", { n: aggregate.aggregates.length })}</div>
         </div>
       </div>
 
       <div className="vpBody">
         <p className="vpIntro">
-          Confirm that the on-chain aggregate is exactly the homomorphic sum of every accepted ballot —
-          no ballot added twice, none omitted.
+          {t("Confirm that the on-chain aggregate is exactly the homomorphic sum of every accepted ballot — no ballot added twice, none omitted.")}
         </p>
 
         <div className="vpStep">
           <div className="vpStepNum">1</div>
           <div className="vpStepContent">
-            <div className="vpStepTitle">Download the aggregate fixture</div>
+            <div className="vpStepTitle">{t("Download the aggregate fixture")}</div>
             <p className="vpStepDesc">
-              Contains every accepted ballot's ciphertext points and the published on-chain aggregate.
-              All ballots are fetched from the chain — may take a moment.
+              {t("Contains every accepted ballot's ciphertext points and the published on-chain aggregate. All ballots are fetched from the chain — may take a moment.")}
             </p>
             <button
               type="button"
@@ -75,7 +75,7 @@ export function VerifyAggregatePanel({ aggregate, onDownloadFixture, downloading
                 <path d="M6.5 1v8M3 6l3.5 3.5L10 6" />
                 <path d="M1 11h11" />
               </svg>
-              {downloading ? "Fetching all ballots…" : fixtureFilename}
+              {downloading ? t("Fetching all ballots…") : fixtureFilename}
             </button>
           </div>
         </div>
@@ -83,7 +83,7 @@ export function VerifyAggregatePanel({ aggregate, onDownloadFixture, downloading
         <div className="vpStep">
           <div className="vpStepNum">2</div>
           <div className="vpStepContent">
-            <div className="vpStepTitle">Install the Shutter crypto SDK</div>
+            <div className="vpStepTitle">{t("Install the Shutter crypto SDK")}</div>
             <CodeBlock>{installCmd}</CodeBlock>
           </div>
         </div>
@@ -91,35 +91,33 @@ export function VerifyAggregatePanel({ aggregate, onDownloadFixture, downloading
         <div className="vpStep">
           <div className="vpStepNum">3</div>
           <div className="vpStepContent">
-            <div className="vpStepTitle">Write and run the verification script</div>
+            <div className="vpStepTitle">{t("Write and run the verification script")}</div>
             <p className="vpStepDesc">
-              Save as <span className="mono">{scriptName}</span> next to the fixture, then run:
+              {t("Save as")} <span className="mono">{scriptName}</span> {t("next to the fixture, then run:")}
             </p>
             <CodeBlock>{scriptCode}</CodeBlock>
             <CodeBlock>{`node ${scriptName}`}</CodeBlock>
-            <div className="vpExpectedLabel">Expected output</div>
+            <div className="vpExpectedLabel">{t("Expected output")}</div>
             <pre className="vpExpectedOutput">{expectedOutput}</pre>
             <p className="vpStepDesc" style={{ marginTop: 8 }}>
-              Exit code 0 = aggregate matches. Exit code 1 = mismatch detected.
+              {t("Exit code 0 = aggregate matches. Exit code 1 = mismatch detected.")}
             </p>
           </div>
         </div>
 
         <div className="vpSection">
-          <div className="vpSectionLabel">WHAT'S BEING CHECKED</div>
+          <div className="vpSectionLabel">{t("WHAT'S BEING CHECKED")}</div>
           <div className="vpCheckList">
             <div className="vpCheckItem">
-              <div className="vpCheckName">Homomorphic sum</div>
+              <div className="vpCheckName">{t("Homomorphic sum")}</div>
               <div className="vpCheckDesc">
-                Each ballot ciphertext (c1, c2) is a BLS12-381 G2 point. Point-adding all per-candidate
-                c1s gives the aggregate c1; same for c2. The result must equal the on-chain aggregate byte-for-byte.
+                {t("Each ballot ciphertext (c1, c2) is a BLS12-381 G2 point. Point-adding all per-candidate c1s gives the aggregate c1; same for c2. The result must equal the on-chain aggregate byte-for-byte.")}
               </div>
             </div>
             <div className="vpCheckItem">
-              <div className="vpCheckName">Only accepted ballots counted</div>
+              <div className="vpCheckName">{t("Only accepted ballots counted")}</div>
               <div className="vpCheckDesc">
-                The fixture includes only ballots whose ZK proofs passed on-chain.
-                Any ballot rejected at submission is excluded from the sum.
+                {t("The fixture includes only ballots whose ZK proofs passed on-chain. Any ballot rejected at submission is excluded from the sum.")}
               </div>
             </div>
           </div>

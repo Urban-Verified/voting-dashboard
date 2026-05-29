@@ -163,6 +163,43 @@ button, input, select, textarea {
   cursor: not-allowed;
 }
 
+.langToggle {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 1px 2px var(--shadow);
+}
+
+.langToggleBtn {
+  height: 100%;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.langToggleBtn + .langToggleBtn {
+  border-left: 1px solid var(--border);
+}
+
+.langToggleBtn--active {
+  background: var(--shutter-blue);
+  color: #fff;
+}
+
+.langToggleBtn:hover:not(.langToggleBtn--active) {
+  background: rgba(0,0,0,0.04);
+  color: var(--text);
+}
+
 /* ─── STATUS SECTION ─────────────────────────────────────── */
 
 .statusSection {

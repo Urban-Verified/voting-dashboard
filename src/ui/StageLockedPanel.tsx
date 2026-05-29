@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { formatUnixUtc } from "./formatUnixUtc";
 import { StageLifecycleBadge, type StageLifecycle } from "./StageLifecycleBadge";
 
@@ -24,7 +25,8 @@ type Props = {
 };
 
 export function StageLockedPanel({ stageNum, waitingOn, votingStart, votingEnd }: Props) {
-  const hint = LOCKED_HINT[stageNum] ?? "This stage will unlock once earlier steps complete.";
+  const { t } = useTranslation();
+  const hint = t(LOCKED_HINT[stageNum] ?? "This stage will unlock once earlier steps complete.");
 
   return (
     <div className="stageLockedCard">
@@ -36,14 +38,14 @@ export function StageLockedPanel({ stageNum, waitingOn, votingStart, votingEnd }
           </svg>
         </div>
         <div className="stageLockedHdrCol">
-          <div className="stageLockedHdrPending">PENDING</div>
-          <h3 className="stageLockedHdrTitle">This stage hasn&apos;t started yet.</h3>
+          <div className="stageLockedHdrPending">{t("PENDING")}</div>
+          <h3 className="stageLockedHdrTitle">{t("This stage hasn't started yet.")}</h3>
         </div>
       </div>
       <p className="stageLockedHint">{hint}</p>
       {waitingOn.length > 0 && (
         <div className="stageWaitingOn">
-          <div className="stageWaitingOnLabel">WAITING ON</div>
+          <div className="stageWaitingOnLabel">{t("WAITING ON")}</div>
           <div className="stageWaitingOnList">
             {waitingOn.map((s, i) => (
               <div
@@ -52,8 +54,8 @@ export function StageLockedPanel({ stageNum, waitingOn, votingStart, votingEnd }
               >
                 <span className="stageWaitingOnNum">{String(s.num).padStart(2, "0")}</span>
                 <div className="stageWaitingOnRowBody">
-                  <div className="stageWaitingOnRowTitle">{s.title}</div>
-                  <div className="stageWaitingOnRowSub">{s.subLabel}</div>
+                  <div className="stageWaitingOnRowTitle">{t(s.title)}</div>
+                  <div className="stageWaitingOnRowSub">{t(s.subLabel)}</div>
                 </div>
                 <StageLifecycleBadge lifecycle={s.lifecycle} small />
               </div>
@@ -63,11 +65,11 @@ export function StageLockedPanel({ stageNum, waitingOn, votingStart, votingEnd }
       )}
       <div className="stageLockedDates">
         <div className="stageLockedDateRow">
-          <span className="stageLockedDateLabel">Voting opens</span>
+          <span className="stageLockedDateLabel">{t("Voting opens")}</span>
           <span className="stageLockedDateValue">{formatUnixUtc(votingStart)} UTC</span>
         </div>
         <div className="stageLockedDateRow">
-          <span className="stageLockedDateLabel">Voting closes</span>
+          <span className="stageLockedDateLabel">{t("Voting closes")}</span>
           <span className="stageLockedDateValue">{formatUnixUtc(votingEnd)} UTC</span>
         </div>
       </div>

@@ -37,6 +37,9 @@ import { VerifyResultPanel } from "./ui/VerifyResultPanel";
 import { Term } from "./ui/Term";
 import { StageLifecycleBadge } from "./ui/StageLifecycleBadge";
 import { StageLockedPanel, type WaitingOnStage } from "./ui/StageLockedPanel";
+import { LanguageToggle } from "./ui/LanguageToggle";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import {
   applyCachedVerifyForBallots,
   ballotVerifyCacheKey,
@@ -120,12 +123,14 @@ function daysUntilUnix(unixSec: bigint): number {
   return Math.max(0, Math.ceil(diff / 86_400));
 }
 
-function daysLabel(n: number): string {
-  return n === 1 ? "1 day" : `${n} days`;
+function daysLabel(t: TFunction, n: number): string {
+  return n === 1 ? t("1 day") : t("{{n}} days", { n });
 }
 
-function stageProgressLabel(stageNum: number, inProgress: boolean): string {
-  return `Stage ${stageNum} of 5 ${inProgress ? "in progress" : "up next"}`;
+function stageProgressLabel(t: TFunction, stageNum: number, inProgress: boolean): string {
+  return inProgress
+    ? t("Stage {{n}} of 5 in progress", { n: stageNum })
+    : t("Stage {{n}} of 5 up next", { n: stageNum });
 }
 
 function computeOverviewDisplay(params: {
@@ -139,8 +144,9 @@ function computeOverviewDisplay(params: {
   aggregate: EncryptedTally | null;
   shares: DecryptionShare[] | null;
   ballotTotal: bigint;
+  t: TFunction;
 }): OverviewDisplay {
-  const { overview, result, aggregate, shares, ballotTotal } = params;
+  const { overview, result, aggregate, shares, ballotTotal, t } = params;
   const thresholdT = Number(overview.config.thresholdT);
   const thresholdN = Number(overview.config.thresholdN);
   const sharesCount = shares?.length ?? 0;
@@ -150,24 +156,25 @@ function computeOverviewDisplay(params: {
     return {
       leftLabel: "ELECTION FINALIZED",
       showCurrentlyDot: false,
-      mainTitle: formatOutcomeOverviewTitle(outcome),
-      mainSub: `${outcome.totalVotes.toString()} total votes counted`,
-      footerDesc: "Every stage has completed. The result is published and fully verifiable.",
+      mainTitle: formatOutcomeOverviewTitle(outcome, t),
+      mainSub: t("{{n}} total votes counted", { n: outcome.totalVotes.toString() }),
+      footerDesc: t("Every stage has completed. The result is published and fully verifiable."),
       rightLabel: "WHAT YOU CAN DO NOW",
-      rightDesc:
+      rightDesc: t(
         "Open any stage on the left to inspect what happened, then use the right column to re-run that step yourself.",
+      ),
     };
   }
 
   const nextStageDesc = (stageNum: number) =>
-    STAGE_ITEMS[Math.min(stageNum, STAGE_ITEMS.length) - 1]!.desc;
+    t(STAGE_ITEMS[Math.min(stageNum, STAGE_ITEMS.length) - 1]!.desc);
 
   if (!overview.isDKGFinalized) {
     return {
       leftLabel: "CURRENTLY",
       showCurrentlyDot: true,
-      mainTitle: stageProgressLabel(1, false),
-      stageDesc: STAGE_ITEMS[0]!.desc,
+      mainTitle: stageProgressLabel(t, 1, false),
+      stageDesc: t(STAGE_ITEMS[0]!.desc),
       rightLabel: "WHAT COMES NEXT",
       rightDesc: nextStageDesc(2),
     };
@@ -178,10 +185,12 @@ function computeOverviewDisplay(params: {
     return {
       leftLabel: "CURRENTLY",
       showCurrentlyDot: true,
-      mainTitle: "Voting hasn't opened yet",
-      mainSub: days === 0 ? "Opens today" : `Opens in ${daysLabel(days)}`,
-      stageHeading: stageProgressLabel(2, false),
-      stageDesc: STAGE_ITEMS[1]!.desc,
+      mainTitle: t("Voting hasn't opened yet"),
+      mainSub: days === 0
+        ? t("Opens today")
+        : t("Opens in {{label}}", { label: daysLabel(t, days) }),
+      stageHeading: stageProgressLabel(t, 2, false),
+      stageDesc: t(STAGE_ITEMS[1]!.desc),
       rightLabel: "WHAT COMES NEXT",
       rightDesc: nextStageDesc(3),
     };
@@ -189,15 +198,16 @@ function computeOverviewDisplay(params: {
 
   if (overview.phase === 3) {
     const daysLeft = daysUntilUnix(overview.config.votingEnd);
-    const closingSub =
-      daysLeft === 0 ? "Voting closing now" : `Closes in ${daysLabel(daysLeft)}`;
+    const closingSub = daysLeft === 0
+      ? t("Voting closing now")
+      : t("Closes in {{label}}", { label: daysLabel(t, daysLeft) });
     return {
       leftLabel: "CURRENTLY",
       showCurrentlyDot: true,
-      mainTitle: `${ballotTotal.toString()} ballots cast so far`,
+      mainTitle: t("{{n}} ballots cast so far", { n: ballotTotal.toString() }),
       mainSub: closingSub,
-      stageHeading: stageProgressLabel(2, true),
-      stageDesc: STAGE_ITEMS[1]!.desc,
+      stageHeading: stageProgressLabel(t, 2, true),
+      stageDesc: t(STAGE_ITEMS[1]!.desc),
       rightLabel: "WHAT COMES NEXT",
       rightDesc: nextStageDesc(3),
     };
@@ -208,10 +218,10 @@ function computeOverviewDisplay(params: {
     return {
       leftLabel: "CURRENTLY",
       showCurrentlyDot: true,
-      mainTitle: "Voting has closed",
-      mainSub: `${ballotTotal.toString()} ballots accepted`,
-      stageHeading: stageProgressLabel(3, true),
-      stageDesc: STAGE_ITEMS[2]!.desc,
+      mainTitle: t("Voting has closed"),
+      mainSub: t("{{n}} ballots accepted", { n: ballotTotal.toString() }),
+      stageHeading: stageProgressLabel(t, 3, true),
+      stageDesc: t(STAGE_ITEMS[2]!.desc),
       rightLabel: "WHAT COMES NEXT",
       rightDesc: nextStageDesc(4),
     };
@@ -221,10 +231,13 @@ function computeOverviewDisplay(params: {
     return {
       leftLabel: "CURRENTLY",
       showCurrentlyDot: true,
-      mainTitle: `${sharesCount} of ${thresholdN} keyper shares received`,
-      mainSub: `Need ${thresholdT} valid shares to decrypt`,
-      stageHeading: stageProgressLabel(4, true),
-      stageDesc: STAGE_ITEMS[3]!.desc,
+      mainTitle: t("{{count}} of {{total}} keyper shares received", {
+        count: sharesCount,
+        total: thresholdN,
+      }),
+      mainSub: t("Need {{n}} valid shares to decrypt", { n: thresholdT }),
+      stageHeading: stageProgressLabel(t, 4, true),
+      stageDesc: t(STAGE_ITEMS[3]!.desc),
       rightLabel: "WHAT COMES NEXT",
       rightDesc: nextStageDesc(5),
     };
@@ -233,16 +246,17 @@ function computeOverviewDisplay(params: {
   return {
     leftLabel: "CURRENTLY",
     showCurrentlyDot: true,
-    mainTitle: "Final tally being published",
-    mainSub: "Threshold met · decrypting vote counts",
-    stageHeading: stageProgressLabel(5, true),
-    stageDesc: STAGE_ITEMS[4]!.desc,
+    mainTitle: t("Final tally being published"),
+    mainSub: t("Threshold met · decrypting vote counts"),
+    stageHeading: stageProgressLabel(t, 5, true),
+    stageDesc: t(STAGE_ITEMS[4]!.desc),
     rightLabel: "WHAT COMES NEXT",
     rightDesc: nextStageDesc(5),
   };
 }
 
 export default function App() {
+  const { t } = useTranslation();
   const rpcUrl = import.meta.env.VITE_RPC_URL;
   const registryAddress = import.meta.env.VITE_ELECTION_REGISTRY;
   const [electionOptions, setElectionOptions] = useState<{ address: string; electionId: bigint | null }[]>([]);
@@ -888,8 +902,9 @@ export default function App() {
       aggregate,
       shares,
       ballotTotal: overviewBallotTotal,
+      t,
     });
-  }, [overview, result, aggregate, shares, overviewBallotTotal]);
+  }, [overview, result, aggregate, shares, overviewBallotTotal, t]);
 
   useEffect(() => {
     if (!provider || !selectedElection || !overview || overview.phase !== 3) return;
@@ -977,11 +992,11 @@ export default function App() {
       });
     return (
       <div className="verifyYourselfSection">
-        <div className="verifyYourselfLabel">VERIFY YOURSELF</div>
+        <div className="verifyYourselfLabel">{t("VERIFY YOURSELF")}</div>
         <p className="verifyYourselfDesc">
           {available
-            ? "Don't trust this panel — re-run the same cryptographic check yourself, against this stage's on-chain data, on your own machine."
-            : "Once this stage completes, you'll be able to re-run its cryptographic check on your own machine — same code, same fixtures, no trust in the dashboard required."}
+            ? t("Don't trust this panel — re-run the same cryptographic check yourself, against this stage's on-chain data, on your own machine.")
+            : t("Once this stage completes, you'll be able to re-run its cryptographic check on your own machine — same code, same fixtures, no trust in the dashboard required.")}
         </p>
         <button
           type="button"
@@ -991,9 +1006,9 @@ export default function App() {
         >
           {available
             ? showVerifyGuide
-              ? "Hide verification guide ↑"
-              : "Open manual verification guide →"
-            : "Manual verification not available yet"}
+              ? t("Hide verification guide ↑")
+              : t("Open manual verification guide →")
+            : t("Manual verification not available yet")}
         </button>
       </div>
     );
@@ -1015,19 +1030,19 @@ export default function App() {
     const lifecycle = stageLifecycle(stageNum);
     const statusText =
       lifecycle === "done"
-        ? "This stage is completed."
+        ? t("This stage is completed.")
         : lifecycle === "in_progress"
-          ? "This stage is currently active."
-          : "This stage hasn't started yet.";
+          ? t("This stage is currently active.")
+          : t("This stage hasn't started yet.");
     return (
       <div className="stageDetailHdr">
-        <h2 className="stageDetailTitle">{title}</h2>
+        <h2 className="stageDetailTitle">{t(title)}</h2>
         <div className="stageDetailSubTag">{subLabel}</div>
         <div className="stageDetailStatusRow">
           <StageLifecycleBadge lifecycle={lifecycle} />
           <span className="dim stageDetailStatusText">{statusText}</span>
         </div>
-        <p className="stageDetailDesc">{desc}</p>
+        <p className="stageDetailDesc">{t(desc)}</p>
         {!isTriple && (
           <div className="techSection">
             <button
@@ -1035,7 +1050,7 @@ export default function App() {
               className="stageDetailTechLink"
               onClick={() => setShowTech((v) => !v)}
             >
-              What this means technically
+              {t("What this means technically")}
             </button>
             {showTech && (
               <p className="techSectionText">{STAGE_TECH[tab]}</p>
@@ -1053,30 +1068,33 @@ export default function App() {
     switch (num) {
       case 1:
         return {
-          title: `${overview.config.thresholdN.toString()} of ${overview.config.thresholdN.toString()} keypers ready`,
-          sub: "Encryption committee finalized",
+          title: t("{{n}} of {{n}} keypers ready", { n: overview.config.thresholdN.toString() }),
+          sub: t("Encryption committee finalized"),
         };
       case 2:
         return {
-          title: `${overviewBallotTotal.toString()} ballots accepted`,
-          sub: "Voting closed",
+          title: t("{{n}} ballots accepted", { n: overviewBallotTotal.toString() }),
+          sub: t("Voting closed"),
         };
       case 3:
         return aggregate ? {
-          title: `${overviewBallotTotal.toString()} ballots summed`,
-          sub: `Into ${aggregate.aggregates.length} encrypted candidate totals`,
+          title: t("{{n}} ballots summed", { n: overviewBallotTotal.toString() }),
+          sub: t("Into {{n}} encrypted candidate totals", { n: aggregate.aggregates.length }),
         } : null;
       case 4:
         return shares ? {
-          title: `${shares.length} of ${overview.config.thresholdN.toString()} keyper shares received`,
-          sub: "Threshold met · tally decrypted",
+          title: t("{{count}} of {{total}} keyper shares received", {
+            count: shares.length,
+            total: overview.config.thresholdN.toString(),
+          }),
+          sub: t("Threshold met · tally decrypted"),
         } : null;
       case 5: {
         if (!result) return null;
         const outcome = computeElectionOutcome(result.tally);
         return {
-          title: formatOutcomeStageTitle(outcome),
-          sub: `${outcome.totalVotes.toString()} total votes counted`,
+          title: formatOutcomeStageTitle(outcome, t),
+          sub: t("{{n}} total votes counted", { n: outcome.totalVotes.toString() }),
         };
       }
       default:
@@ -1107,6 +1125,7 @@ export default function App() {
         <div className="topBarSpacer" />
         <div className="topBarRight">
           <span className="topBarRegistry">Registry:&nbsp;<Hex value={registryAddress ?? ""} trim={8} /></span>
+          <LanguageToggle />
           <button
             type="button"
             className="topBarRefreshBtn"
@@ -1119,7 +1138,7 @@ export default function App() {
               <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
               <path d="M8 16H3v5" />
             </svg>
-            {loadingElections ? "Refreshing…" : "Refresh"}
+            {loadingElections ? t("Refreshing…") : t("Refresh")}
           </button>
         </div>
       </header>
@@ -1127,7 +1146,7 @@ export default function App() {
       {/* ═══ MAIN CONTENT (centered max-width) ═══ */}
       <div className="pageMain">
 
-      {loadError && <div className="errorBanner">Error: {loadError}</div>}
+      {loadError && <div className="errorBanner">{t("Error:")} {loadError}</div>}
 
       {!selectedElection && !loadingElections && (
         <div className="emptyState dim">
@@ -1142,12 +1161,12 @@ export default function App() {
           <div className="elecHeader">
             <div className="elecHeaderTop">
               <div className="elecHeaderMain">
-                <div className="elecHeaderLabel">Election #{overview.config.electionId.toString()}</div>
+                <div className="elecHeaderLabel">{t("Election #{{n}}", { n: overview.config.electionId.toString() })}</div>
                 <div className="elecHeaderTitle">Personalrat München</div>
-                <div className="elecHeaderSubtitle">A secret-ballot vote for the workers' council.</div>
+                <div className="elecHeaderSubtitle">{t("A secret-ballot vote for the workers' council.")}</div>
               </div>
               <div className="elecHeaderSwitch">
-                <div className="switchElecLabel">SWITCH ELECTION</div>
+                <div className="switchElecLabel">{t("SWITCH ELECTION")}</div>
                 {electionOptions.length > 0 ? (
                   <select
                     className="switchElecSelect"
@@ -1163,38 +1182,45 @@ export default function App() {
                     ))}
                   </select>
                 ) : (
-                  <span className="dim" style={{ fontSize: 12 }}>No elections loaded</span>
+                  <span className="dim" style={{ fontSize: 12 }}>{t("No elections loaded")}</span>
                 )}
               </div>
             </div>
             <div className="elecHeaderStats">
               <div className="elecHeaderStat">
-                <div className="elecHeaderStatLabel">Voting Opens</div>
+                <div className="elecHeaderStatLabel">{t("Voting Opens")}</div>
                 <div className="elecHeaderStatValue">{formatUnixUtc(overview.config.votingStart)} <span className="elecHeaderStatDesc">UTC</span></div>
               </div>
               <div className="elecHeaderStat">
-                <div className="elecHeaderStatLabel">Voting Closes</div>
+                <div className="elecHeaderStatLabel">{t("Voting Closes")}</div>
                 <div className="elecHeaderStatValue">{formatUnixUtc(overview.config.votingEnd)} <span className="elecHeaderStatDesc">UTC</span></div>
               </div>
               <div className="elecHeaderStat">
-                <div className="elecHeaderStatLabel">Candidates on the Ballot</div>
-                <div className="elecHeaderStatValue">{overview.config.numCandidates} <span className="elecHeaderStatDesc">people running</span> </div>
+                <div className="elecHeaderStatLabel">{t("Candidates on the Ballot")}</div>
+                <div className="elecHeaderStatValue">{overview.config.numCandidates} <span className="elecHeaderStatDesc">{t("people running")}</span> </div>
               </div>
               <div className="elecHeaderStat">
-                <div className="elecHeaderStatLabel">Vote Points per Voter</div>
-                <div className="elecHeaderStatValue">{overview.config.budget} <span className="elecHeaderStatDesc">point(s) each</span> </div>
+                <div className="elecHeaderStatLabel">{t("Vote Points per Voter")}</div>
+                <div className="elecHeaderStatValue">{overview.config.budget} <span className="elecHeaderStatDesc">{t("point(s) each")}</span> </div>
                 <div className="elecHeaderStatDesc">
-                  Each voter gets {overview.config.budget} points to distribute across the {overview.config.numCandidates} candidates.
+                  {t("Each voter gets {{budget}} points to distribute across the {{candidates}} candidates.", {
+                    budget: overview.config.budget,
+                    candidates: overview.config.numCandidates,
+                  })}
                 </div>
               </div>
               <div className="elecHeaderStat">
-                <div className="elecHeaderStatLabel">Key Guardians</div>
+                <div className="elecHeaderStatLabel">{t("Key Guardians")}</div>
                 <div className="elecHeaderStatValue">
-                  {overview.config.thresholdT.toString()} of {overview.config.thresholdN.toString()} <span className="elecHeaderStatDesc">must agree</span>
+                  {t("{{t}} of {{n}}", {
+                    t: overview.config.thresholdT.toString(),
+                    n: overview.config.thresholdN.toString(),
+                  })} <span className="elecHeaderStatDesc">{t("must agree")}</span>
                 </div>
                 <div className="elecHeaderStatDesc">
-                  An independent committee. Only when {overview.config.thresholdT.toString()} of them
-                  combine their keys can the result be decrypted — no single guardian can ever see the votes alone.
+                  {t("An independent committee. Only when {{t}} of them combine their keys can the result be decrypted — no single guardian can ever see the votes alone.", {
+                    t: overview.config.thresholdT.toString(),
+                  })}
                 </div>
               </div>
             </div>
@@ -1205,26 +1231,24 @@ export default function App() {
 
             {/* HOW THIS ELECTION IS KEPT HONEST + status row (line grid, no card boxes) */}
             <div className="trustSection">
-              <div className="trustSectionLabel">HOW THIS ELECTION IS KEPT HONEST</div>
+              <div className="trustSectionLabel">{t("HOW THIS ELECTION IS KEPT HONEST")}</div>
               <div
                 className={`overviewHonestGrid${overviewDisplay ? "" : " overviewHonestGrid--trustOnly"}`}
               >
                 <div className="overviewHonestCell trustCard">
-                  <div className="trustCardTitle">Every step is public, signed, and cryptographically proven.</div>
+                  <div className="trustCardTitle">{t("Every step is public, signed, and cryptographically proven.")}</div>
                   <div className="trustCardDesc">
-                    Every action on this election — key setup, ballot submission, counting, decryption — is
-                    recorded on-chain with a signature and a{" "}
-                    <Term id="zero-knowledge proof">zero-knowledge proof</Term> of correctness. Anyone,
-                    including you, can re-run any proof to confirm.
+                    {t("Every action on this election — key setup, ballot submission, counting, decryption — is recorded on-chain with a signature and a")}
+                    {" "}
+                    <Term id="zero-knowledge proof">{t("zero-knowledge proof")}</Term>{" "}
+                    {t("of correctness. Anyone, including you, can re-run any proof to confirm.")}
                   </div>
                 </div>
                 <div className="overviewHonestCell trustCard">
-                  <div className="trustCardTitle">Votes are counted while still encrypted.</div>
+                  <div className="trustCardTitle">{t("Votes are counted while still encrypted.")}</div>
                   <div className="trustCardDesc">
-                    Using <Term id="homomorphic tallying">homomorphic tallying</Term>, encrypted ballots
-                    are added together so the totals appear without ever decrypting any individual ballot.
-                    You can inspect every ciphertext on-chain and re-verify the tallying authority's proofs
-                    that the count is correct.
+                    {t("Using")} <Term id="homomorphic tallying">{t("homomorphic tallying")}</Term>
+                    {t(", encrypted ballots are added together so the totals appear without ever decrypting any individual ballot. You can inspect every ciphertext on-chain and re-verify the tallying authority's proofs that the count is correct.")}
                   </div>
                 </div>
                 {overviewDisplay && (
@@ -1232,9 +1256,9 @@ export default function App() {
                 <div className="overviewHonestCell overviewStatusBlock">
                   <div className="overviewStatusLabel">
                     {overviewDisplay.leftLabel === "CURRENTLY" ? (
-                      <>CURRENTLY {overviewDisplay.showCurrentlyDot && <span className="overviewCurrentlyDot" />}</>
+                      <>{t("CURRENTLY")} {overviewDisplay.showCurrentlyDot && <span className="overviewCurrentlyDot" />}</>
                     ) : (
-                      overviewDisplay.leftLabel
+                      t(overviewDisplay.leftLabel)
                     )}
                   </div>
                   {overviewDisplay.leftLabel === "ELECTION FINALIZED" ? (
@@ -1273,7 +1297,7 @@ export default function App() {
                   )}
                 </div>
                 <div className="overviewHonestCell overviewStatusBlock">
-                  <div className="overviewStatusLabel">{overviewDisplay.rightLabel}</div>
+                  <div className="overviewStatusLabel">{t(overviewDisplay.rightLabel)}</div>
                   <p className="overviewStatusDesc">{overviewDisplay.rightDesc}</p>
                 </div>
                 </>
@@ -1293,7 +1317,7 @@ export default function App() {
               onClick={() => navigateTo("overview")}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigateTo("overview"); } }}
             >
-              <span><span style={{ color: "#6b7280" }}>01</span> <span style={{ color: "#0b1220" }}>OVERVIEW</span></span>
+              <span><span style={{ color: "#6b7280" }}>01</span> <span style={{ color: "#0b1220" }}>{t("OVERVIEW")}</span></span>
             </div>
             {isStageView && (
               <div
@@ -1303,13 +1327,13 @@ export default function App() {
                 onClick={isTriple ? closeVerifyPanel : undefined}
                 onKeyDown={isTriple ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); closeVerifyPanel(); } } : undefined}
               >
-                <span><span style={{ color: "#6b7280" }}>02</span> <span style={{ color: "#0b1220" }}>STAGE</span></span>
+                <span><span style={{ color: "#6b7280" }}>02</span> <span style={{ color: "#0b1220" }}>{t("STAGE")}</span></span>
               </div>
             )}
             {isTriple && (
               <div className="colHeader colHeaderVerify">
-                <span><span style={{ color: "#6b7280" }}>03</span> <span style={{ color: "#0b1220" }}>VERIFY</span></span>
-                <button type="button" className="colHeaderCloseBtn" onClick={closeVerifyPanel}>CLOSE</button>
+                <span><span style={{ color: "#6b7280" }}>03</span> <span style={{ color: "#0b1220" }}>{t("VERIFY")}</span></span>
+                <button type="button" className="colHeaderCloseBtn" onClick={closeVerifyPanel}>{t("CLOSE")}</button>
               </div>
             )}
           </div>
@@ -1319,7 +1343,7 @@ export default function App() {
             <div className="overviewBody">
 
               <p className="overviewQuote">
-                "Every ballot encrypted, counted while still encrypted, opened only by a committee acting together."
+                {t("\"Every ballot encrypted, counted while still encrypted, opened only by a committee acting together.\"")}
               </p>
 
               {/* Stage list */}
@@ -1339,12 +1363,12 @@ export default function App() {
                       <div className="stageRowFullContent">
                         <div className="stageRowFullNum">0{s.num}</div>
                         <div className="stageRowFullBody">
-                          <h3 className="stageRowFullTitle">{s.title}</h3>
-                          <div className="stageRowFullSub">{s.subLabel}</div>
-                          <p className="stageRowFullDesc">{s.desc}</p>
+                          <h3 className="stageRowFullTitle">{t(s.title)}</h3>
+                          <div className="stageRowFullSub">{t(s.subLabel)}</div>
+                          <p className="stageRowFullDesc">{t(s.desc)}</p>
                           {stageResult && (
                             <div className="stageRowResult">
-                              <div className="stageRowResultLabel">RESULT</div>
+                              <div className="stageRowResultLabel">{t("RESULT")}</div>
                               <div className="stageRowResultTitle">{stageResult.title}</div>
                               <div className="stageRowResultSub">{stageResult.sub}</div>
                             </div>
@@ -1384,7 +1408,7 @@ export default function App() {
                       >
                         <div className="stageRowMiniNum">0{s.num}</div>
                         <div className="stageRowMiniBody">
-                          <div className="stageRowMiniTitle">{s.title}</div>
+                          <div className="stageRowMiniTitle">{t(s.title)}</div>
                           <StageLifecycleBadge lifecycle={lifecycle} small />
                         </div>
                         <div className="stageRowMiniArrow">›</div>
@@ -1402,21 +1426,24 @@ export default function App() {
                   <div className="stageDetail slideInRight">
                     {renderStageHeader(1, STAGE_ITEMS[0].title, <Term id={STAGE_ITEMS[0].subLabel}>{STAGE_ITEMS[0].subLabel}</Term>, STAGE_ITEMS[0].desc)}
                     <div className="stageDataGrid">
-                      <span className="dim"><Term id="Threshold">Threshold</Term></span>
+                      <span className="dim"><Term id="Threshold">{t("Threshold")}</Term></span>
                       <span className="mono">
-                        {overview.config.thresholdT.toString()} of {overview.config.thresholdN.toString()} keypers
+                        {t("{{t}} of {{n}} keypers", {
+                          t: overview.config.thresholdT.toString(),
+                          n: overview.config.thresholdN.toString(),
+                        })}
                       </span>
-                      <span className="dim">DKG finalized</span>
-                      <span className="mono">{overview.isDKGFinalized ? "Yes" : "No"}</span>
-                      <span className="dim"><Term id="Election Public Key">Election Public Key</Term></span>
+                      <span className="dim">{t("DKG finalized")}</span>
+                      <span className="mono">{overview.isDKGFinalized ? t("Yes") : t("No")}</span>
+                      <span className="dim"><Term id="Election Public Key">{t("Election Public Key")}</Term></span>
                       <span><Hex value={overview.dkg.pkElection} trim={24} /></span>
-                      <span className="dim"><Term id="Whitelist Registrar">Whitelist Registrar Key</Term></span>
+                      <span className="dim"><Term id="Whitelist Registrar">{t("Whitelist Registrar Key")}</Term></span>
                       <span><Hex value={overview.config.pkWR} trim={24} /></span>
                     </div>
 
                     {overview.config.keyperAddresses.length > 0 && (
                       <div className="keyperCommittee">
-                        <div className="keyperCommitteeTitle"><Term id="Keyper committee">KEYPER COMMITTEE</Term></div>
+                        <div className="keyperCommitteeTitle"><Term id="Keyper committee">{t("KEYPER COMMITTEE")}</Term></div>
                         {overview.config.keyperAddresses.map((addr, i) => (
                           <div key={addr} className="keyperRow mono">
                             <span className="keyperRowIdx">#{i}</span>
@@ -1444,24 +1471,24 @@ export default function App() {
                             {pageVerifyStats.valid > 0 && (
                               <span className="blSummaryItem">
                                 <span className="blSummaryDot blSummaryDot--ok" />
-                                {pageVerifyStats.valid} valid
+                                {t("{{n}} valid", { n: pageVerifyStats.valid })}
                               </span>
                             )}
                             {pageVerifyStats.invalid > 0 && (
                               <span className="blSummaryItem">
                                 <span className="blSummaryDot blSummaryDot--bad" />
-                                {pageVerifyStats.invalid} invalid
+                                {t("{{n}} invalid", { n: pageVerifyStats.invalid })}
                               </span>
                             )}
                             {pageVerifyStats.checking > 0 && (
                               <span className="blSummaryItem">
                                 <span className="blSummaryDot blSummaryDot--warn" />
-                                {pageVerifyStats.checking} checking
+                                {t("{{n}} checking", { n: pageVerifyStats.checking })}
                               </span>
                             )}
-                            {ballots.length > 0 && <span className="blSummaryMeta">on this page</span>}
+                            {ballots.length > 0 && <span className="blSummaryMeta">{t("on this page")}</span>}
                             {ballotsLoading && pageVerifyStats.valid === 0 && pageVerifyStats.invalid === 0 && (
-                              <span className="blSummaryMeta">Loading…</span>
+                              <span className="blSummaryMeta">{t("Loading…")}</span>
                             )}
                           </div>
                           <div className="blPagination">
@@ -1471,13 +1498,13 @@ export default function App() {
                               disabled={loadingElections || ballotsLoading || exportingFixture}
                               style={{ fontSize: 12 }}
                             >
-                              {exportingFixture ? "Exporting…" : "Export Ballots"}
+                              {exportingFixture ? t("Exporting…") : t("Export Ballots")}
                             </button>
-                            <span className="badge statPill">total {ballotsTotal.toString()}</span>
-                            <span className="badge statPill">page size {pageSize}</span>
-                            <span className="badge statPill">page {page + 1}/{safeTotalPages}</span>
+                            <span className="badge statPill">{t("total {{n}}", { n: ballotsTotal.toString() })}</span>
+                            <span className="badge statPill">{t("page size {{n}}", { n: pageSize })}</span>
+                            <span className="badge statPill">{t("page {{n}}/{{total}}", { n: page + 1, total: safeTotalPages })}</span>
                             <div className="gotoPill">
-                              <div className="gotoPillLabel">go to</div>
+                              <div className="gotoPillLabel">{t("go to")}</div>
                               <input
                                 inputMode="numeric"
                                 type="number"
@@ -1491,8 +1518,8 @@ export default function App() {
                                 min={1}
                               />
                             </div>
-                            <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}>Prev</button>
-                            <button onClick={() => setPage((p) => Math.min(safeTotalPages - 1, p + 1))} disabled={page + 1 >= safeTotalPages}>Next</button>
+                            <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}>{t("Prev")}</button>
+                            <button onClick={() => setPage((p) => Math.min(safeTotalPages - 1, p + 1))} disabled={page + 1 >= safeTotalPages}>{t("Next")}</button>
                           </div>
                         </div>
 
@@ -1526,13 +1553,13 @@ export default function App() {
                                   <span className="blRowPseudonymGroup">
                                     <span className="mono"><Hex value={b.pseudonym} trim={14} copyable={false} /></span>
                                     <span onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                                      <CopyTextButton text={b.pseudonym} ariaLabel="Copy pseudonym" />
+                                      <CopyTextButton text={b.pseudonym} ariaLabel={t("Copy pseudonym")} />
                                     </span>
                                   </span>
                                 </div>
                                 <div className="blRowStatus">
-                                  {v.status === "ok" && <span className="badge ok">VALID</span>}
-                                  {v.status === "bad" && <span className="badge bad" title={v.reason}>INVALID</span>}
+                                  {v.status === "ok" && <span className="badge ok">{t("VALID")}</span>}
+                                  {v.status === "bad" && <span className="badge bad" title={v.reason}>{t("INVALID")}</span>}
                                   {v.status === "verifying" && <span className="badge warn">Checking…</span>}
                                 </div>
                               </div>
@@ -1568,8 +1595,7 @@ export default function App() {
                     ) : !aggregate ? (
                       <>
                         <p className="stageAwaitingData dim">
-                          No aggregate published yet. The tally aggregator will homomorphically sum accepted ballots
-                          after voting closes.
+                          {t("No aggregate published yet. The tally aggregator will homomorphically sum accepted ballots after voting closes.")}
                         </p>
                         {renderVerifySection(3)}
                       </>
@@ -1578,12 +1604,12 @@ export default function App() {
                         {!isTriple && (
                           <>
                             <div className="stageCountBadge">
-                              candidates: {aggregate.aggregates.length}
+                              {t("candidates: {{n}}", { n: aggregate.aggregates.length })}
                             </div>
                             <div className="dataCardList">
                               {aggregate.aggregates.map((ct, j) => (
                                 <div key={j} className="dataCard candidateBlock mono">
-                                  <div className="candidateBlockLabel">candidate {j}</div>
+                                  <div className="candidateBlockLabel">{t("candidate {{n}}", { n: j })}</div>
                                   <div className="candidateBlockData">
                                     <div className="candidateCipherRow">
                                       <span className="dim">c1</span>
@@ -1598,9 +1624,7 @@ export default function App() {
                               ))}
                             </div>
                             <p className="dim helpFootnote" style={{ marginTop: 20 }}>
-                              The aggregate is the <strong>encrypted combined vote</strong> per candidate: every accepted ballot
-                              ciphertext is <strong>added together</strong> (homomorphic encrypted sum). You still only see
-                              ciphertexts here — the actual vote counts stay hidden until keypers submit decryption shares.
+                              {t("The aggregate is the encrypted combined vote per candidate: every accepted ballot ciphertext is added together (homomorphic encrypted sum). You still only see ciphertexts here — the actual vote counts stay hidden until keypers submit decryption shares.")}
                             </p>
                           </>
                         )}
@@ -1620,12 +1644,11 @@ export default function App() {
                         {renderVerifySection(4)}
                       </>
                     ) : !shares ? (
-                      <div className="dim">Loading shares…</div>
+                      <div className="dim">{t("Loading shares…")}</div>
                     ) : shares.length === 0 ? (
                       <>
                         <p className="stageAwaitingData dim">
-                          No decryption shares submitted yet. Keypers publish one share per candidate once the
-                          aggregate is on-chain.
+                          {t("No decryption shares submitted yet. Keypers publish one share per candidate once the aggregate is on-chain.")}
                         </p>
                         {renderVerifySection(4)}
                       </>
@@ -1633,7 +1656,7 @@ export default function App() {
                       <>
                         {!isTriple && (<>
                         <div className="stageCountBadge">
-                          shares submitted: {shares.length}
+                          {t("shares submitted: {{n}}", { n: shares.length })}
                         </div>
                         <div className="dataCardList">
                         {shares.map((sh, rowIdx) => (
@@ -1644,10 +1667,10 @@ export default function App() {
                             <div className="shareBlockHeader">
                               <span className="shareBlockKeyper">
                                 <span className="shareBlockKeyperIndex">#{sh.keyperIndex}</span>
-                                <span className="shareBlockKeyperLabel"> KEYPER</span>
+                                <span className="shareBlockKeyperLabel"> {t("KEYPER")}</span>
                               </span>
                               <span className="shareBlockSubmitted">
-                                <span className="shareBlockSubmittedLabel">SUBMITTED</span>
+                                <span className="shareBlockSubmittedLabel">{t("SUBMITTED")}</span>
                                 <span className="shareBlockSubmittedTime">
                                   {formatUnixUtc(sh.submittedAt)} UTC
                                 </span>
@@ -1666,27 +1689,27 @@ export default function App() {
                                 return (
                                   <div key={j} className="shareCandidate">
                                     <div className="shareCandidateHdr">
-                                      <span className="shareCandidateTitle">CANDIDATE {j}</span>
+                                      <span className="shareCandidateTitle">{t("CANDIDATE {{n}}", { n: j })}</span>
                                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                        {dv.status === "ok" && <span className="badge ok">DLEQ OK</span>}
-                                        {dv.status === "bad" && <span className="badge bad" title={dv.reason}>DLEQ FAIL</span>}
-                                        {dv.status === "verifying" && <span className="badge warn">Checking…</span>}
+                                        {dv.status === "ok" && <span className="badge ok">{t("DLEQ OK")}</span>}
+                                        {dv.status === "bad" && <span className="badge bad" title={dv.reason}>{t("DLEQ FAIL")}</span>}
+                                        {dv.status === "verifying" && <span className="badge warn">{t("Checking…")}</span>}
                                         <button
                                           type="button"
                                           onClick={() => void verifyDecryptShareAt(rowIdx, j)}
                                           disabled={loadingElections || !canVerifyDleq || dv.status === "verifying"}
-                                          title="Verify DLEQ proof for this share"
+                                          title={t("Verify DLEQ proof for this share")}
                                         >
-                                          Verify DLEQ
+                                          {t("Verify DLEQ")}
                                         </button>
                                       </div>
                                     </div>
                                     <div className="shareCandidateData">
-                                      <span className="shareFieldLabel">share</span>
+                                      <span className="shareFieldLabel">{t("share")}</span>
                                       <div style={{ minWidth: 0 }}>
                                         <Hex value={shareHex} trim={30} nowrap />
                                       </div>
-                                      <span className="shareFieldLabel">proof (DLEQ)</span>
+                                      <span className="shareFieldLabel">{t("proof (DLEQ)")}</span>
                                       <div style={{ minWidth: 0 }}>
                                         {p ? (() => {
                                           const eStr = p.e.toString();
@@ -1702,7 +1725,7 @@ export default function App() {
                                                 <span className="dim">|</span>{" "}
                                                 z={trimMiddle(zStr, 13)}
                                               </span>
-                                              <CopyTextButton text={proofCopy} ariaLabel="Copy DLEQ proof" />
+                                              <CopyTextButton text={proofCopy} ariaLabel={t("Copy DLEQ proof")} />
                                             </span>
                                           );
                                         })() : (
@@ -1723,9 +1746,7 @@ export default function App() {
                         ))}
                         </div>
                         <p className="dim helpFootnote" style={{ marginTop: 16 }}>
-                          <strong>Verify DLEQ</strong> checks that a keyper's decryption share matches the published
-                          aggregate ciphertext and that keyper's committee public key — their piece of the decryption
-                          was computed correctly, without exposing private key material.
+                          {t("Verify DLEQ checks that a keyper's decryption share matches the published aggregate ciphertext and that keyper's committee public key — their piece of the decryption was computed correctly, without exposing private key material.")}
                         </p>
                         </>)}
                         {renderVerifySection(4)}
@@ -1746,8 +1767,7 @@ export default function App() {
                     ) : !result ? (
                       <>
                         <p className="stageAwaitingData dim">
-                          No result published yet. Once enough keyper shares are combined, the decrypted tally
-                          will appear here.
+                          {t("No result published yet. Once enough keyper shares are combined, the decrypted tally will appear here.")}
                         </p>
                         {renderVerifySection(5)}
                       </>
@@ -1757,20 +1777,22 @@ export default function App() {
                           <div className="dataCardList">
                             <div className="dataCard tallySection">
                               <div className="tallySectionHdr">
-                                <span className="tallySectionTitle">TALLY</span>
+                                <span className="tallySectionTitle">{t("TALLY")}</span>
                                 <span className="dim">
-                                  {result.tally.length} candidates ·{" "}
-                                  {result.tally.reduce((sum, c) => sum + c, 0n).toString()} votes
+                                  {t("{{n}} candidates · {{votes}} votes", {
+                                    n: result.tally.length,
+                                    votes: result.tally.reduce((sum, c) => sum + c, 0n).toString(),
+                                  })}
                                 </span>
                               </div>
                               <ResultPie2D tally={result.tally} />
                             </div>
                             {result.keyperIndices.length > 0 && (
                               <div className="dataCard keypersCard">
-                                <div className="tallySectionTitle">KEYPERS USED</div>
+                                <div className="tallySectionTitle">{t("KEYPERS USED")}</div>
                                 <div className="keypersIndicesList">
                                   <span className="keypersIndicesPill">
-                                    Indices: {result.keyperIndices.join(", ")}
+                                    {t("Indices: {{list}}", { list: result.keyperIndices.join(", ") })}
                                   </span>
                                 </div>
                               </div>
@@ -1839,10 +1861,10 @@ export default function App() {
       {/* ═══ SITE FOOTER ═══ */}
       <footer className="siteFooter" aria-label="Credits">
         <span className="siteFooterLine">
-          <span className="siteFooterDeveloped">Developed for City of Munich</span>
+          <span className="siteFooterDeveloped">{t("Developed for City of Munich")}</span>
           <span className="siteFooterComma">, </span>
           <span className="siteFooterPowered">
-            Powered by Bundeswehr Universität München × Votebase × brainbot/Shutter
+            {t("Powered by Bundeswehr Universität München × Votebase × brainbot/Shutter")}
           </span>
         </span>
       </footer>

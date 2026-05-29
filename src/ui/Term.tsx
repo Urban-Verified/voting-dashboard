@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 
 type GlossaryEntry = { title: string; body: string };
 
@@ -118,6 +119,7 @@ const FLIP_THRESHOLD = 160;
 type TooltipPos = { top: number; left: number; below: boolean };
 
 export function Term({ id, children }: { id: string; children?: React.ReactNode }) {
+  const { t } = useTranslation();
   const [pos, setPos] = useState<TooltipPos | null>(null);
   const wrapRef = useRef<HTMLSpanElement>(null);
   const entry = GLOSSARY[id];
@@ -162,8 +164,8 @@ export function Term({ id, children }: { id: string; children?: React.ReactNode 
             transform: pos.below ? "none" : "translateY(-100%)",
           }}
         >
-          <span className="termTooltipTitle">{entry.title}</span>
-          <span className="termTooltipBody">{entry.body}</span>
+          <span className="termTooltipTitle">{t(entry.title)}</span>
+          <span className="termTooltipBody">{t(entry.body)}</span>
         </span>,
         document.body
       )}

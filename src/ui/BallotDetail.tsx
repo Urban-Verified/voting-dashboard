@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Hex } from "./Hex";
 import type { Ballot } from "../eth/types";
 
@@ -53,17 +54,18 @@ type Props = {
 };
 
 export function BallotDetail({ ballot, globalIndex, verifyState, onBack, onVerifyLocally }: Props) {
+  const { t } = useTranslation();
   const vs = verifyState.status;
   const iconType = vs === "ok" ? "ok" : vs === "bad" ? "bad" : vs === "verifying" ? "checking" : "idle";
 
   return (
     <div className="bdContainer">
       <button type="button" className="bdBack" onClick={onBack}>
-        ← Back to ballots
+        {t("← Back to ballots")}
       </button>
 
-      <div className="bdBallotLabel">BALLOT</div>
-      <h2 className="bdBallotIndex">Index {globalIndex}</h2>
+      <div className="bdBallotLabel">{t("BALLOT")}</div>
+      <h2 className="bdBallotIndex">{t("Index {{n}}", { n: globalIndex })}</h2>
 
       <div className="bdPseudonymRow mono">
         <span className="dim">pseudonym</span>
@@ -78,15 +80,15 @@ export function BallotDetail({ ballot, globalIndex, verifyState, onBack, onVerif
         <div className="bdStatusBody">
           {vs === "ok" && (
             <>
-              <div className="bdStatusTitle">VALID</div>
+              <div className="bdStatusTitle">{t("VALID")}</div>
               <div className="bdStatusDesc">
-                All cryptographic checks passed — WR attestation, ZK proofs, voter signature, field decoding.
+                {t("All cryptographic checks passed — WR attestation, ZK proofs, voter signature, field decoding.")}
               </div>
             </>
           )}
           {vs === "bad" && (
             <>
-              <div className="bdStatusTitle">INVALID</div>
+              <div className="bdStatusTitle">{t("INVALID")}</div>
               <div className="bdStatusDesc">
                 {(verifyState as Extract<VerifyState, { status: "bad" }>).reason}
               </div>
@@ -94,14 +96,14 @@ export function BallotDetail({ ballot, globalIndex, verifyState, onBack, onVerif
           )}
           {vs === "verifying" && (
             <>
-              <div className="bdStatusTitle">Verifying…</div>
-              <div className="bdStatusDesc">Running cryptographic checks in the background.</div>
+              <div className="bdStatusTitle">{t("Verifying…")}</div>
+              <div className="bdStatusDesc">{t("Running cryptographic checks in the background.")}</div>
             </>
           )}
           {vs === "idle" && (
             <>
-              <div className="bdStatusTitle">Pending</div>
-              <div className="bdStatusDesc">Verification will run automatically.</div>
+              <div className="bdStatusTitle">{t("Pending")}</div>
+              <div className="bdStatusDesc">{t("Verification will run automatically.")}</div>
             </>
           )}
         </div>
@@ -109,19 +111,19 @@ export function BallotDetail({ ballot, globalIndex, verifyState, onBack, onVerif
 
       {/* Details section */}
       <div className="bdSection">
-        <div className="bdSectionLabel">DETAILS</div>
+        <div className="bdSectionLabel">{t("DETAILS")}</div>
         <div className="bdGrid mono">
           <div className="dim">vk</div>
           <div>
             <Hex value={ballot.vk} trim={26} />{" "}
-            <span className="dim">({hexBytesLen(ballot.vk)} bytes)</span>
+            <span className="dim">{t("({{n}} bytes)", { n: hexBytesLen(ballot.vk) })}</span>
           </div>
 
           <div className="dim">ciphertexts</div>
           <div>
             {ballot.ciphertexts.map((ct, j) => (
               <div key={j} className="bdCiphertext">
-                <div className="dim bdCandidateLabel">candidate {j}</div>
+                <div className="dim bdCandidateLabel">{t("candidate {{n}}", { n: j })}</div>
                 <div className="bdCipherRow">
                   <span className="dim">c1</span>
                   <Hex value={ct.c1} trim={20} />
@@ -153,12 +155,12 @@ export function BallotDetail({ ballot, globalIndex, verifyState, onBack, onVerif
 
       {/* Verify yourself section */}
       <div className="verifyYourselfSection">
-        <div className="verifyYourselfLabel">VERIFY YOURSELF</div>
+        <div className="verifyYourselfLabel">{t("VERIFY YOURSELF")}</div>
           <p className="verifyYourselfDesc">
-            Don't trust this panel — re-run the same cryptographic check yourself, against this stage's on-chain data, on your own machine.
+            {t("Don't trust this panel — re-run the same cryptographic check yourself, against this stage's on-chain data, on your own machine.")}
           </p>
           <button type="button" className="verifyYourselfBtn" onClick={onVerifyLocally}>
-            Open manual verification guide →
+            {t("Open manual verification guide →")}
           </button>
       </div>
     </div>
