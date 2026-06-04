@@ -51,12 +51,15 @@ type Props = {
   verifyState: VerifyState;
   onBack: () => void;
   onVerifyLocally: () => void;
+  txHash?: string | null;
+  explorerUrl?: string;
 };
 
-export function BallotDetail({ ballot, globalIndex, verifyState, onBack, onVerifyLocally }: Props) {
+export function BallotDetail({ ballot, globalIndex, verifyState, onBack, onVerifyLocally, txHash, explorerUrl }: Props) {
   const { t } = useTranslation();
   const vs = verifyState.status;
   const iconType = vs === "ok" ? "ok" : vs === "bad" ? "bad" : vs === "verifying" ? "checking" : "idle";
+  const explorerTxUrl = explorerUrl && txHash ? `${explorerUrl}/tx/${txHash}` : null;
 
   return (
     <div className="bdContainer">
@@ -67,9 +70,27 @@ export function BallotDetail({ ballot, globalIndex, verifyState, onBack, onVerif
       <div className="bdBallotLabel">{t("BALLOT")}</div>
       <h2 className="bdBallotIndex">{t("Index {{n}}", { n: globalIndex })}</h2>
 
-      <div className="bdPseudonymRow mono">
+      <div className="bdPseudonymRow">
         <span className="dim">pseudonym</span>
         <Hex value={ballot.pseudonym} trim={20} />
+      </div>
+
+      <div className="bdTxRow">
+        <span className="dim">transaction</span>
+        {explorerTxUrl ? (
+          <a
+            href={explorerTxUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bdTxLink mono"
+          >
+            <Hex value={txHash!} trim={20} />
+          </a>
+        ) : txHash === undefined ? (
+          <span className="dim">{t("Loading…")}</span>
+        ) : (
+          <span className="dim">—</span>
+        )}
       </div>
 
       {/* Status card */}

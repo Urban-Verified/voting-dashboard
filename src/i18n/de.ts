@@ -197,6 +197,11 @@ export const de: Record<string, string> = {
   "Manual verification not available yet": "Manuelle Prüfung noch nicht verfügbar",
 
   // ── Ballot list ─────────────────────────────────────────────────────────
+  "Search by pseudonym": "Nach Pseudonym suchen",
+  "No ballots match that prefix.": "Kein Stimmzettel entspricht diesem Präfix.",
+  "Searching all {{n}} ballots…": "Durchsuche alle {{n}} Stimmzettel…",
+  "across all ballots": "in allen Stimmzetteln",
+  "{{n}} of {{total}} match": "{{n}} von {{total}} entsprechen",
   "Prev": "Zurück",
   "Next": "Weiter",
   "TALLY": "AUSZÄHLUNG",
@@ -258,6 +263,92 @@ export const de: Record<string, string> = {
     "Jeder <0>Keyper</0> veröffentlicht eine partielle Entschlüsselung σ_i = s_i · C₁ auf dem Aggregat-Chiffretext pro Kandidat:in, wobei s_i sein geheimer Anteil ist. Ein nicht-interaktiver <1>DLEQ-Beweis</1> bindet σ_i an den öffentlichen Komitee-Schlüssel (G₂). Beliebige t gültige Anteile werden per <2>Lagrange kombiniert</2> zum Entschlüsselungsfaktor, ohne jemals einen privaten Schlüssel zusammenzusetzen.",
   "STAGE_TECH_RESULT":
     "Der <0>Lagrange-kombinierte</0> Entschlüsselungsfaktor entfernt die Verschlüsselungsmaske vom Aggregat-<1>Chiffretext</1> jeder/jedes Kandidat:in (G₂). Eine begrenzte <2>Baby-Step / Giant-Step</2>-Suche in G₂ gewinnt die Stimmzahl pro Kandidat:in als Ganzzahl zurück.",
+
+  // ── Easy mode (einfach) strings ─────────────────────────────────────────
+
+  // Overview quote
+  "Every vote is sealed and can only be opened when enough guardians work together.":
+    "Jede Stimme ist versiegelt und kann nur geöffnet werden, wenn genug Hüter zusammenarbeiten.",
+
+  // Trust cards (easy)
+  "Everything is recorded and anyone can check it.":
+    "Alles wird aufgezeichnet und jeder kann es prüfen.",
+  "Every action in this election — setting up the lock, casting votes, counting, and unlocking — is written down. Anyone, including you, can check that every step was done correctly.":
+    "Jeder Schritt dieser Wahl — Schloss einrichten, Stimmen abgeben, zählen und öffnen — wird festgehalten. Jede:r, auch Sie, kann prüfen, ob alles korrekt abgelaufen ist.",
+  "Nobody sees your vote. Only the final totals are revealed.":
+    "Niemand sieht Ihre Stimme. Nur das Gesamtergebnis wird enthüllt.",
+  "All votes are counted without anyone opening a single one. You can check the final results yourself — no need to trust this dashboard.":
+    "Alle Stimmen werden gezählt, ohne dass auch nur eine geöffnet wird. Sie können das Endergebnis selbst prüfen — kein Vertrauen in das Dashboard nötig.",
+
+  // Stage descriptions (easy)
+  "A group of independent guardians set up a special lock for this election. No single guardian holds the full key — they only work together.":
+    "Eine Gruppe unabhängiger Hüter richtet ein besonderes Schloss für diese Wahl ein. Kein einzelner Hüter hat den vollständigen Schlüssel — sie arbeiten nur gemeinsam.",
+  "Each voter sends their choice in a sealed envelope that nobody can open. Only the final totals are ever shown — not individual votes.":
+    "Jede wählende Person sendet ihre Wahl in einem versiegelten Umschlag, den niemand öffnen kann. Nur das Gesamtergebnis wird angezeigt — keine einzelnen Stimmen.",
+  "All the sealed votes are added up together without anyone opening a single one. The totals appear while every vote stays sealed.":
+    "Alle versiegelten Stimmen werden zusammengezählt, ohne dass auch nur eine geöffnet wird. Die Summen erscheinen, während jede Stimme versiegelt bleibt.",
+  "Each guardian contributes a small piece to unlock the final count. No single guardian can see the votes alone.":
+    "Jeder Hüter gibt ein kleines Stück, um das Endergebnis freizugeben. Kein einzelner Hüter kann die Stimmen allein sehen.",
+  "When enough guardians work together, the final vote counts are revealed and the winner is announced.":
+    "Wenn genug Hüter zusammenarbeiten, werden die Stimmzahlen enthüllt und der Gewinner bekannt gegeben.",
+
+  // Stage 1 DKG analogy view (easy)
+  "{{t}} of {{n}} — no single guardian can act alone":
+    "{{t}} von {{n}} — kein einzelner Hüter kann allein handeln",
+  "A shared lock that seals every ballot. Anyone can use it to seal a vote — only the guardians together can ever open it.":
+    "Ein gemeinsames Schloss, das jeden Stimmzettel versiegelt. Jeder kann es zum Versiegeln nutzen — nur die Hüter gemeinsam können es jemals öffnen.",
+  "Confirms each voter is on the official eligibility list.":
+    "Bestätigt, dass jede:r Wähler:in auf der offiziellen Wahlliste steht.",
+  "Each holds one piece of the key. {{t}} of {{n}} must work together — no single guardian can unlock the results alone.":
+    "Jeder hält ein Stück des Schlüssels. {{t}} von {{n}} müssen zusammenarbeiten — kein einzelner Hüter kann das Ergebnis allein freigeben.",
+  "Guardian {{n}}": "Hüter {{n}}",
+
+  // Stage 3 aggregate analogy view (easy)
+  "Sealed total — hidden until guardians unlock": "Versiegelte Summe — verborgen bis die Hüter öffnen",
+  "All votes were added together while still sealed — like counting closed envelopes without opening any. The totals stay hidden until the guardians work together to open them.":
+    "Alle Stimmen wurden zusammengezählt, während sie versiegelt blieben — wie das Zählen geschlossener Umschläge ohne einen zu öffnen. Die Summen bleiben verborgen, bis die Hüter gemeinsam öffnen.",
+
+  // Stage 4 shares analogy view (easy)
+  "{{n}} of {{total}} guardians contributed": "{{n}} von {{total}} Hütern haben ihren Teil beigetragen",
+  "Guardian": "Hüter",
+  "Submitted": "Eingereicht",
+  "Contributed their piece of the key — checked and verified.":
+    "Hat seinen Teil des Schlüssels beigesteuert — geprüft und bestätigt.",
+  "Each guardian holds one piece. Once {{t}} pieces are combined, the sealed totals are opened and the real vote counts appear.":
+    "Jeder Hüter hält ein Stück. Sobald {{t}} Stücke kombiniert werden, werden die versiegelten Summen geöffnet und die echten Stimmzahlen erscheinen.",
+
+  // Stage 5 result (easy)
+  "Guardians who helped": "Hüter, die geholfen haben",
+
+  // Stage 1 DKG summary (easy)
+  "All {{n}} guardians are set up. {{t}} of them must work together to reveal the final results.":
+    "Alle {{n}} Hüter sind bereit. {{t}} von ihnen müssen zusammenarbeiten, um das Endergebnis freizugeben.",
+  "The guardians are still setting up. {{t}} of {{n}} must be ready before voting can begin.":
+    "Die Hüter richten noch ein. {{t}} von {{n}} müssen bereit sein, bevor die Abstimmung beginnen kann.",
+
+  // Stage 3 aggregate (easy)
+  "The sealed vote totals haven't been published yet. They will appear here once voting ends.":
+    "Die versiegelten Stimmensummen wurden noch nicht veröffentlicht. Sie erscheinen hier, sobald die Abstimmung endet.",
+  "The sealed vote totals for all {{n}} candidates are stored here. The actual vote counts are still hidden — they will only be revealed once the guardians work together.":
+    "Die versiegelten Stimmensummen für alle {{n}} Kandidat:innen sind hier gespeichert. Die tatsächlichen Stimmzahlen sind noch verborgen — sie werden erst enthüllt, wenn die Hüter zusammenarbeiten.",
+
+  // Stage 4 shares (easy)
+  "No guardian has submitted their piece yet.":
+    "Noch kein Hüter hat seinen Teil eingereicht.",
+  "{{n}} guardian(s) have submitted their piece so far.":
+    "{{n}} Hüter haben bisher ihren Teil eingereicht.",
+
+  // StageLockedPanel hints (easy)
+  "The guardians need to finish setting up the election lock first.":
+    "Die Hüter müssen zuerst das Wahlschloss einrichten.",
+  "Once voting starts, the sealed votes will appear here.":
+    "Sobald die Abstimmung beginnt, erscheinen die versiegelten Stimmen hier.",
+  "Once voting ends, the vote totals will appear here, still sealed.":
+    "Sobald die Abstimmung endet, erscheinen die versiegelten Stimmensummen hier.",
+  "Once the totals are published, the guardians will begin unlocking the final count.":
+    "Sobald die Summen veröffentlicht sind, beginnen die Hüter, das Endergebnis freizugeben.",
+  "Once enough guardians contribute their piece, the final vote counts will appear here.":
+    "Sobald genug Hüter ihren Teil beigesteuert haben, erscheinen hier die Stimmzahlen.",
 
   // ── Footer ──────────────────────────────────────────────────────────────
   "Developed for City of Munich": "Entwickelt für die Stadt München",

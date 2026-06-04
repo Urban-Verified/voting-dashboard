@@ -1,4 +1,4 @@
-import { Contract, JsonRpcProvider } from "ethers";
+import { Contract, JsonRpcProvider, id as keccak256id, zeroPadValue } from "ethers";
 import { ElectionAbi, ElectionRegistryAbi } from "./abis";
 import type {
   Ballot,
@@ -153,6 +153,29 @@ export async function fetchDecryptionShares(
     shares: [...s.shares] as Hex[],
     proofs: s.proofs.map((p) => ({ e: BigInt(p.e), z: BigInt(p.z) })),
   }));
+}
+
+export async function fetchBallotTxHash(
+  provider: JsonRpcProvider,
+  electionAddress: string,
+  pseudonym: Hex,
+): Promise<Hex | null> {
+  const topic0 = keccak256id("VoteSubmitted(bytes32,uint256)");
+  const topic1 = zeroPadValue(pseudonym, 32);
+  // fromBlock as hex string, no toBlock — required by 0xrpc.io which rejects
+  // "latest" as toBlock and rejects numeric fromBlock values.
+  // Set VITE_REGISTRY_DEPLOY_BLOCK in .env to narrow the search range.
+  const deployBlock = import.meta.env.VITE_REGISTRY_DEPLOY_BLOCK;
+  const fromBlock = 0
+    ? "0x" + parseInt(deployBlock, 10).toString(16)
+    : "0x0";
+  const logs = await provider.getLogs({
+    address: electionAddress,
+    topics: [topic0, topic1],
+    fromBlock,
+  });
+  if (logs.length === 0) return null;
+  return logs[0].transactionHash as Hex;
 }
 
 export async function fetchResult(

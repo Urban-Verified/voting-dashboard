@@ -9,9 +9,10 @@ type Props = {
   aggregate: EncryptedTally;
   shares: DecryptionShare[];
   selectedElection: string;
+  onAddToClaude?: () => void;
 };
 
-export function VerifySharesPanel({ overview, aggregate, shares, selectedElection }: Props) {
+export function VerifySharesPanel({ overview, aggregate, shares, selectedElection, onAddToClaude }: Props) {
   const { t } = useTranslation();
   const fixtureFilename = "shares-fixture.json";
   const scriptName = "verify-shares.js";
@@ -91,6 +92,15 @@ export function VerifySharesPanel({ overview, aggregate, shares, selectedElectio
           </div>
         </div>
       </div>
+
+      {onAddToClaude && (
+        <div className="vpAiSection">
+          <span className="vpAiOr">{t("or verify the whole election using your AI agent")}</span>
+          <button type="button" className="vpAiBtn" onClick={onAddToClaude}>
+            {t("Add to your AI agent")}
+          </button>
+        </div>
+      )}
 
       <div className="vpBody">
         <p className="vpIntro">

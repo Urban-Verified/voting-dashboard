@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode }
 import {
   fetchAggregate,
   fetchBallotsPage,
+  fetchBallotTxHash,
   fetchDecryptionShares,
   fetchElectionElectionId,
   fetchElectionOverview,
@@ -38,6 +39,9 @@ import { Term } from "./ui/Term";
 import { StageLifecycleBadge } from "./ui/StageLifecycleBadge";
 import { StageLockedPanel, type WaitingOnStage } from "./ui/StageLockedPanel";
 import { LanguageToggle } from "./ui/LanguageToggle";
+import { AddToClaudeView } from "./ui/AddToClaudeView";
+import { ComplexityToggle } from "./ui/ComplexityToggle";
+import { useComplexity } from "./ui/ComplexityContext";
 import { Trans, useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import {
@@ -75,6 +79,7 @@ const STAGE_ITEMS = [
     title: "Encryption Keys Set Up",
     subLabel: "Distributed Key Generation (DKG)",
     desc: "An independent committee of guardians (keypers) jointly generates the election's encryption key. No single party ever holds the key. Only a threshold of them, acting together, can decrypt anything.",
+    easyDesc: "A group of independent guardians set up a special lock for this election. No single guardian holds the full key — they only work together.",
   },
   {
     num: 2 as const,
@@ -82,6 +87,7 @@ const STAGE_ITEMS = [
     title: "Voters Cast Encrypted Ballots",
     subLabel: "Encrypted Ballot Submission",
     desc: "Each voter encrypts their choices on their own device. The ciphertext goes to the registry together with proofs that the voter is eligible and stayed within budget. Their actual choices are never revealed.",
+    easyDesc: "Each voter sends their choice in a sealed envelope that nobody can open. Only the final totals are ever shown — not individual votes.",
   },
   {
     num: 3 as const,
@@ -89,6 +95,7 @@ const STAGE_ITEMS = [
     title: "Encrypted Vote Counting",
     subLabel: "Homomorphic Aggregation",
     desc: "All encrypted ballots are added together without ever decrypting any of them. The combined ciphertext per candidate is still fully encrypted, so nothing about individual votes is revealed.",
+    easyDesc: "All the sealed votes are added up together without anyone opening a single one. The totals appear while every vote stays sealed.",
   },
   {
     num: 4 as const,
@@ -96,6 +103,7 @@ const STAGE_ITEMS = [
     title: "Threshold Decryption",
     subLabel: "Keyper Decryption Shares (DLEQ-proven)",
     desc: "A threshold of keypers each contribute one piece of the decryption, with a cryptographic proof that their piece is correct. Only together do these pieces reveal the count. No keyper ever sees the votes alone.",
+    easyDesc: "Each guardian contributes a small piece to unlock the final count. No single guardian can see the votes alone.",
   },
   {
     num: 5 as const,
@@ -103,6 +111,7 @@ const STAGE_ITEMS = [
     title: "Final Tally Published",
     subLabel: "Decrypted Result",
     desc: "Once enough keyper shares are combined, the encrypted aggregate decrypts to plain vote counts per candidate, and the winner is determined.",
+    easyDesc: "When enough guardians work together, the final vote counts are revealed and the winner is announced.",
   },
 ] as const;
 
@@ -145,8 +154,9 @@ function computeOverviewDisplay(params: {
   shares: DecryptionShare[] | null;
   ballotTotal: bigint;
   t: TFunction;
+  isEasy: boolean;
 }): OverviewDisplay {
-  const { overview, result, aggregate, shares, ballotTotal, t } = params;
+  const { overview, result, aggregate, shares, ballotTotal, t, isEasy } = params;
   const thresholdT = Number(overview.config.thresholdT);
   const thresholdN = Number(overview.config.thresholdN);
   const sharesCount = shares?.length ?? 0;
@@ -166,17 +176,19 @@ function computeOverviewDisplay(params: {
     };
   }
 
-  const nextStageDesc = (stageNum: number) =>
-    t(STAGE_ITEMS[Math.min(stageNum, STAGE_ITEMS.length) - 1]!.desc);
+  const stageDesc = (idx: number) => {
+    const item = STAGE_ITEMS[Math.min(idx, STAGE_ITEMS.length) - 1]!;
+    return t(isEasy ? item.easyDesc : item.desc);
+  };
 
   if (!overview.isDKGFinalized) {
     return {
       leftLabel: "CURRENTLY",
       showCurrentlyDot: true,
       mainTitle: stageProgressLabel(t, 1, false),
-      stageDesc: t(STAGE_ITEMS[0]!.desc),
+      stageDesc: stageDesc(1),
       rightLabel: "WHAT COMES NEXT",
-      rightDesc: nextStageDesc(2),
+      rightDesc: stageDesc(2),
     };
   }
 
@@ -190,9 +202,9 @@ function computeOverviewDisplay(params: {
         ? t("Opens today")
         : t("Opens in {{label}}", { label: daysLabel(t, days) }),
       stageHeading: stageProgressLabel(t, 2, false),
-      stageDesc: t(STAGE_ITEMS[1]!.desc),
+      stageDesc: stageDesc(2),
       rightLabel: "WHAT COMES NEXT",
-      rightDesc: nextStageDesc(3),
+      rightDesc: stageDesc(3),
     };
   }
 
@@ -207,9 +219,9 @@ function computeOverviewDisplay(params: {
       mainTitle: t("{{n}} ballots cast so far", { n: ballotTotal.toString() }),
       mainSub: closingSub,
       stageHeading: stageProgressLabel(t, 2, true),
-      stageDesc: t(STAGE_ITEMS[1]!.desc),
+      stageDesc: stageDesc(2),
       rightLabel: "WHAT COMES NEXT",
-      rightDesc: nextStageDesc(3),
+      rightDesc: stageDesc(3),
     };
   }
 
@@ -221,9 +233,9 @@ function computeOverviewDisplay(params: {
       mainTitle: t("Voting has closed"),
       mainSub: t("{{n}} ballots accepted", { n: ballotTotal.toString() }),
       stageHeading: stageProgressLabel(t, 3, true),
-      stageDesc: t(STAGE_ITEMS[2]!.desc),
+      stageDesc: stageDesc(3),
       rightLabel: "WHAT COMES NEXT",
-      rightDesc: nextStageDesc(4),
+      rightDesc: stageDesc(4),
     };
   }
 
@@ -237,9 +249,9 @@ function computeOverviewDisplay(params: {
       }),
       mainSub: t("Need {{n}} valid shares to decrypt", { n: thresholdT }),
       stageHeading: stageProgressLabel(t, 4, true),
-      stageDesc: t(STAGE_ITEMS[3]!.desc),
+      stageDesc: stageDesc(4),
       rightLabel: "WHAT COMES NEXT",
-      rightDesc: nextStageDesc(5),
+      rightDesc: stageDesc(5),
     };
   }
 
@@ -249,14 +261,15 @@ function computeOverviewDisplay(params: {
     mainTitle: t("Final tally being published"),
     mainSub: t("Threshold met · decrypting vote counts"),
     stageHeading: stageProgressLabel(t, 5, true),
-    stageDesc: t(STAGE_ITEMS[4]!.desc),
+    stageDesc: stageDesc(5),
     rightLabel: "WHAT COMES NEXT",
-    rightDesc: nextStageDesc(5),
+    rightDesc: stageDesc(5),
   };
 }
 
 export default function App() {
   const { t } = useTranslation();
+  const { isEasy } = useComplexity();
   const rpcUrl = import.meta.env.VITE_RPC_URL;
   const registryAddress = import.meta.env.VITE_ELECTION_REGISTRY;
   const [electionOptions, setElectionOptions] = useState<{ address: string; electionId: bigint | null }[]>([]);
@@ -278,6 +291,7 @@ export default function App() {
   const [result, setResult] = useState<ElectionResult | null>(null);
 
   const [tab, setTab] = useState<Tab>("overview");
+  const [showAiSkill, setShowAiSkill] = useState(false);
   const [showTech, setShowTech] = useState(false);
 
   const [page, setPage] = useState(0);
@@ -286,12 +300,16 @@ export default function App() {
   const [ballots, setBallots] = useState<Ballot[]>([]);
   const [ballotsLoading, setBallotsLoading] = useState(false);
   const [gotoPageInput, setGotoPageInput] = useState<string>("");
+  const [ballotSearch, setBallotSearch] = useState("");
+  const [allBallots, setAllBallots] = useState<Ballot[] | null>(null);
+  const [allBallotsLoading, setAllBallotsLoading] = useState(false);
   const [exportingFixture, setExportingFixture] = useState(false);
 
   const [verifyByPseudonym, setVerifyByPseudonym] = useState<Record<string, VerifyState>>({});
 
   const [detailView, setDetailView] = useState<{ pseudonym: string; globalIndex: number } | null>(null);
   const [showVerifyPanel, setShowVerifyPanel] = useState(false);
+  const [ballotTxHash, setBallotTxHash] = useState<string | null | undefined>(undefined);
 
   const [decVerifyByKey, setDecVerifyByKey] = useState<Record<string, VerifyState>>({});
   const [overviewBallotTotal, setOverviewBallotTotal] = useState<bigint>(0n);
@@ -333,6 +351,15 @@ export default function App() {
     verifyQueueRef.current = Promise.resolve();
     cancelBallotVerificationWork();
     autoVerifyStartedRef.current.clear();
+    // Drop stale "verifying" entries so they don't stay stuck as "Checking…"
+    // after the session is cancelled (e.g. page change, election change).
+    setVerifyByPseudonym((m) => {
+      const next: Record<string, VerifyState> = {};
+      for (const [k, v] of Object.entries(m)) {
+        if (v.status !== "verifying") next[k] = v;
+      }
+      return next;
+    });
   }
 
   function hydrateVerifyFromCache(electionAddr: string, pageBallots: Ballot[]) {
@@ -423,6 +450,8 @@ export default function App() {
         setBallots([]);
         setBallotsTotal(0n);
         setPage(0);
+        setAllBallots(null);
+        setBallotSearch("");
         return;
       }
 
@@ -434,6 +463,8 @@ export default function App() {
           setPage(0);
           setBallots([]);
           setBallotsTotal(0n);
+          setAllBallots(null);
+          setBallotSearch("");
         }
         await loadBallotsPageFor(nextElection, nextPage);
       } else if (electionChanged) {
@@ -441,6 +472,8 @@ export default function App() {
         setPage(0);
         setBallots([]);
         setBallotsTotal(0n);
+        setAllBallots(null);
+        setBallotSearch("");
       }
     } catch (e: unknown) {
       setLoadError(errMsg(e));
@@ -492,6 +525,27 @@ export default function App() {
       if (gen === ballotsLoadGenRef.current) setLoadError(errMsg(e));
     } finally {
       if (gen === ballotsLoadGenRef.current) setBallotsLoading(false);
+    }
+  }
+
+  async function loadAllBallots(addr: string, total: bigint) {
+    if (!provider || allBallotsLoading) return;
+    setAllBallotsLoading(true);
+    try {
+      const BATCH = 100;
+      const count = Number(total);
+      if (count === 0) { setAllBallots([]); return; }
+      const batches = Math.ceil(count / BATCH);
+      const results = await Promise.all(
+        Array.from({ length: batches }, (_, i) =>
+          fetchBallotsPage(provider, addr, i * BATCH, BATCH)
+        )
+      );
+      setAllBallots(results.flatMap(r => r.ballots));
+    } catch {
+      setAllBallots([]);
+    } finally {
+      setAllBallotsLoading(false);
     }
   }
 
@@ -573,6 +627,24 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, selectedElection, ballots]);
 
+  const filteredBallots = useMemo(() => {
+    if (!ballotSearch) return ballots;
+    if (!allBallots) return [];
+    return allBallots.filter(b => b.pseudonym.startsWith(ballotSearch));
+  }, [ballots, ballotSearch, allBallots]);
+
+  const pageVerifyStats = useMemo(() => {
+    let valid = 0, invalid = 0, checking = 0;
+    for (const b of filteredBallots) {
+      const v = resolveBallotVerifyState(selectedElection || undefined, b.pseudonym);
+      if (v.status === "idle") continue;
+      if (v.status === "ok") valid++;
+      else if (v.status === "bad") invalid++;
+      else if (v.status === "verifying") checking++;
+    }
+    return { valid, invalid, checking };
+  }, [filteredBallots, verifyByPseudonym, selectedElection, tab, ballotsLoading]);
+
   useEffect(() => {
     void ensureCurvesReady();
   }, []);
@@ -615,6 +687,35 @@ export default function App() {
     cancelBallotAutoVerify();
   }, [tab]);
 
+  // When search is active, verify the filtered results (may come from other pages).
+  useEffect(() => {
+    if (!ballotSearch || filteredBallots.length === 0 || !overview || !selectedElection) return;
+    if (ballotsAddrRef.current !== selectedElection) return;
+
+    // Restore cached states first so already-verified ballots show immediately.
+    hydrateVerifyFromCache(selectedElection, filteredBallots);
+
+    const session = ballotVerifySessionRef.current;
+    const electionAddr = selectedElection;
+    const snapshot = filteredBallots.slice(); // stable ref for async closure
+
+    if (ballotAutoVerifyTimerRef.current !== null) {
+      window.clearTimeout(ballotAutoVerifyTimerRef.current);
+    }
+    ballotAutoVerifyTimerRef.current = window.setTimeout(() => {
+      ballotAutoVerifyTimerRef.current = null;
+      void runBallotAutoVerifyPage(session, electionAddr, snapshot);
+    }, 250);
+
+    return () => {
+      if (ballotAutoVerifyTimerRef.current !== null) {
+        window.clearTimeout(ballotAutoVerifyTimerRef.current);
+        ballotAutoVerifyTimerRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredBallots, ballotSearch, selectedElection, overview]);
+
   // ── Ballot verification ───────────────────────────────────────────────────
 
   function isBallotVerifyActive(session: number, electionAddr: string): boolean {
@@ -626,10 +727,10 @@ export default function App() {
     );
   }
 
-  async function runBallotAutoVerifyPage(session: number, electionAddr: string) {
+  async function runBallotAutoVerifyPage(session: number, electionAddr: string, ballotsToVerify: Ballot[] = ballots) {
     if (!isBallotVerifyActive(session, electionAddr) || !overviewRef.current) return;
 
-    const pending = ballots.filter((b) => {
+    const pending = ballotsToVerify.filter((b) => {
       if (getCachedBallotVerify(electionAddr, b.pseudonym)) return false;
       const startedKey = ballotVerifyCacheKey(electionAddr, b.pseudonym);
       if (autoVerifyStartedRef.current.has(startedKey)) return false;
@@ -834,22 +935,20 @@ export default function App() {
     setPage(clampPageIndex(n));
   }
 
-  const pageVerifyStats = useMemo(() => {
-    let valid = 0, invalid = 0, checking = 0;
-    for (const b of ballots) {
-      const v = resolveBallotVerifyState(selectedElection || undefined, b.pseudonym);
-      if (v.status === "idle") continue;
-      if (v.status === "ok") valid++;
-      else if (v.status === "bad") invalid++;
-      else if (v.status === "verifying") checking++;
-    }
-    return { valid, invalid, checking };
-  }, [ballots, verifyByPseudonym, selectedElection, tab, ballotsLoading]);
-
   const detailBallot = detailView ? ballots.find((b) => b.pseudonym === detailView.pseudonym) ?? null : null;
   const detailVerifyState: VerifyState = detailView
     ? resolveBallotVerifyState(selectedElection || undefined, detailView.pseudonym)
     : { status: "idle" };
+
+  useEffect(() => {
+    if (!detailView || !provider || !selectedElection) { setBallotTxHash(undefined); return; }
+    let cancelled = false;
+    setBallotTxHash(undefined); // undefined = in-flight
+    void fetchBallotTxHash(provider, selectedElection, detailView.pseudonym as `0x${string}`)
+      .then(hash => { if (!cancelled) setBallotTxHash(hash); })
+      .catch(() => { if (!cancelled) setBallotTxHash(null); });
+    return () => { cancelled = true; };
+  }, [detailView?.pseudonym, selectedElection, provider]);
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -903,8 +1002,9 @@ export default function App() {
       shares,
       ballotTotal: overviewBallotTotal,
       t,
+      isEasy,
     });
-  }, [overview, result, aggregate, shares, overviewBallotTotal, t]);
+  }, [overview, result, aggregate, shares, overviewBallotTotal, t, isEasy]);
 
   useEffect(() => {
     if (!provider || !selectedElection || !overview || overview.phase !== 3) return;
@@ -1013,16 +1113,21 @@ export default function App() {
     try {
       const total = Number(overviewBallotTotal);
       const PAGE = 50;
-      const allCiphertexts: { ciphertexts: unknown }[] = [];
+      const allBallots: Ballot[] = [];
       for (let offset = 0; offset < total; offset += PAGE) {
         const { ballots: page } = await fetchBallotsPage(provider, selectedElection, offset, PAGE);
-        for (const b of page) allCiphertexts.push({ ciphertexts: b.ciphertexts });
+        for (const b of page) allBallots.push(b);
       }
       const fixture = {
         electionId: overview.config.electionId.toString(),
         numCandidates: overview.config.numCandidates,
+        budget: overview.config.budget,
+        mpkElectionG2: overview.dkg.pkElection,
+        pkWrG1: overview.config.pkWR,
+        mode: "exact",
+        variant: "A",
         aggregate: aggregate.aggregates.map((ct) => ({ c1: ct.c1, c2: ct.c2 })),
-        ballots: allCiphertexts,
+        ballots: allBallots,
         electionAddress: selectedElection,
         exportedAt: new Date().toISOString(),
       };
@@ -1041,7 +1146,7 @@ export default function App() {
   }
 
   function renderVerifySection(stageNum: number) {
-    if (isTriple) return null;
+    if (isTriple || isEasy) return null;
     const available =
       stageCtx !== null &&
       isStageVerificationAvailable(stageNum, stageCtx, {
@@ -1081,11 +1186,12 @@ export default function App() {
         waitingOn={buildWaitingOn(stageNum)}
         votingStart={overview.config.votingStart}
         votingEnd={overview.config.votingEnd}
+        isEasy={isEasy}
       />
     );
   }
 
-  function renderStageHeader(stageNum: number, title: string, subLabel: ReactNode, desc: string) {
+  function renderStageHeader(stageNum: number, title: string, subLabel: ReactNode, desc: string, easyDesc: string) {
     const lifecycle = stageLifecycle(stageNum);
     const statusText =
       lifecycle === "done"
@@ -1096,13 +1202,13 @@ export default function App() {
     return (
       <div className="stageDetailHdr">
         <h2 className="stageDetailTitle">{t(title)}</h2>
-        <div className="stageDetailSubTag">{subLabel}</div>
+        {!isEasy && <div className="stageDetailSubTag">{subLabel}</div>}
         <div className="stageDetailStatusRow">
           <StageLifecycleBadge lifecycle={lifecycle} />
           <span className="dim stageDetailStatusText">{statusText}</span>
         </div>
-        <p className="stageDetailDesc">{t(desc)}</p>
-        {!isTriple && (
+        <p className="stageDetailDesc">{t(isEasy ? easyDesc : desc)}</p>
+        {!isTriple && !isEasy && (
           <div className="techSection">
             <button
               type="button"
@@ -1183,8 +1289,9 @@ export default function App() {
         </div>
         <div className="topBarSpacer" />
         <div className="topBarRight">
-          <span className="topBarRegistry">Registry:&nbsp;<Hex value={registryAddress ?? ""} trim={8} /></span>
+          {!isEasy && <span className="topBarRegistry">Registry:&nbsp;<Hex value={registryAddress ?? ""} trim={8} /></span>}
           <LanguageToggle />
+          <ComplexityToggle />
           <button
             type="button"
             className="topBarRefreshBtn"
@@ -1205,16 +1312,24 @@ export default function App() {
       {/* ═══ MAIN CONTENT (centered max-width) ═══ */}
       <div className="pageMain">
 
-      {loadError && <div className="errorBanner">{t("Error:")} {loadError}</div>}
+      {showAiSkill && overview ? (
+        <AddToClaudeView
+          overview={overview}
+          selectedElection={selectedElection}
+          onClose={() => setShowAiSkill(false)}
+        />
+      ) : null}
 
-      {!selectedElection && !loadingElections && (
+      {!showAiSkill && loadError && <div className="errorBanner">{t("Error:")} {loadError}</div>}
+
+      {!showAiSkill && !selectedElection && !loadingElections && (
         <div className="emptyState dim">
           Load elections from a registry to begin.
         </div>
       )}
 
       {/* ═══ MAIN CONTENT ═══ */}
-      {overview && (
+      {!showAiSkill && overview && (
         <>
           {/* Election header - always visible */}
           <div className="elecHeader">
@@ -1295,20 +1410,42 @@ export default function App() {
                 className={`overviewHonestGrid${overviewDisplay ? "" : " overviewHonestGrid--trustOnly"}`}
               >
                 <div className="overviewHonestCell trustCard">
-                  <div className="trustCardTitle">{t("Every step is public, signed, and cryptographically proven.")}</div>
-                  <div className="trustCardDesc">
-                    {t("Every action on this election · key setup, ballot submission, counting, decryption · is recorded on-chain with a signature and a")}
-                    {" "}
-                    <Term id="zero-knowledge proof">{t("zero-knowledge proof")}</Term>{" "}
-                    {t("of correctness. Anyone, including you, can re-run any proof to confirm.")}
-                  </div>
+                  {isEasy ? (
+                    <>
+                      <div className="trustCardTitle">{t("Everything is recorded and anyone can check it.")}</div>
+                      <div className="trustCardDesc">
+                        {t("Every action in this election — setting up the lock, casting votes, counting, and unlocking — is written down. Anyone, including you, can check that every step was done correctly.")}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="trustCardTitle">{t("Every step is public, signed, and cryptographically proven.")}</div>
+                      <div className="trustCardDesc">
+                        {t("Every action on this election · key setup, ballot submission, counting, decryption · is recorded on-chain with a signature and a")}
+                        {" "}
+                        <Term id="zero-knowledge proof">{t("zero-knowledge proof")}</Term>{" "}
+                        {t("of correctness. Anyone, including you, can re-run any proof to confirm.")}
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="overviewHonestCell trustCard">
-                  <div className="trustCardTitle">{t("Votes are counted while still encrypted.")}</div>
-                  <div className="trustCardDesc">
-                    {t("Using")} <Term id="homomorphic tallying">{t("homomorphic tallying")}</Term>
-                    {t(", encrypted ballots are added together so the totals appear without ever decrypting any individual ballot. You can inspect every ciphertext on-chain and re-verify the tallying authority's proofs that the count is correct.")}
-                  </div>
+                  {isEasy ? (
+                    <>
+                      <div className="trustCardTitle">{t("Nobody sees your vote. Only the final totals are revealed.")}</div>
+                      <div className="trustCardDesc">
+                        {t("All votes are counted without anyone opening a single one. You can check the final results yourself — no need to trust this dashboard.")}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="trustCardTitle">{t("Votes are counted while still encrypted.")}</div>
+                      <div className="trustCardDesc">
+                        {t("Using")} <Term id="homomorphic tallying">{t("homomorphic tallying")}</Term>
+                        {t(", encrypted ballots are added together so the totals appear without ever decrypting any individual ballot. You can inspect every ciphertext on-chain and re-verify the tallying authority's proofs that the count is correct.")}
+                      </div>
+                    </>
+                  )}
                 </div>
                 {overviewDisplay && (
                 <>
@@ -1402,7 +1539,9 @@ export default function App() {
             <div className="overviewBody">
 
               <p className="overviewQuote">
-                {t("\"Every ballot encrypted, counted while still encrypted, opened only by a committee acting together.\"")}
+                {isEasy
+                  ? t("Every vote is sealed and can only be opened when enough guardians work together.")
+                  : t("\"Every ballot encrypted, counted while still encrypted, opened only by a committee acting together.\"")}
               </p>
 
               {/* Stage list */}
@@ -1423,8 +1562,8 @@ export default function App() {
                         <div className="stageRowFullNum">0{s.num}</div>
                         <div className="stageRowFullBody">
                           <h3 className="stageRowFullTitle">{t(s.title)}</h3>
-                          <div className="stageRowFullSub">{t(s.subLabel)}</div>
-                          <p className="stageRowFullDesc">{t(s.desc)}</p>
+                          {!isEasy && <div className="stageRowFullSub">{t(s.subLabel)}</div>}
+                          <p className="stageRowFullDesc">{t(isEasy ? s.easyDesc : s.desc)}</p>
                           {stageResult && (
                             <div className="stageRowResult">
                               <div className="stageRowResultLabel">{t("RESULT")}</div>
@@ -1483,33 +1622,59 @@ export default function App() {
                 {/* ── STAGE 1: Encryption keys set up ── */}
                 {tab === "dkg" && (
                   <div className="stageDetail slideInRight">
-                    {renderStageHeader(1, STAGE_ITEMS[0].title, <Term id={STAGE_ITEMS[0].subLabel}>{STAGE_ITEMS[0].subLabel}</Term>, STAGE_ITEMS[0].desc)}
-                    <div className="stageDataGrid">
-                      <span className="dim"><Term id="Threshold">{t("Threshold")}</Term></span>
-                      <span className="mono">
-                        {t("{{t}} of {{n}} keypers", {
-                          t: overview.config.thresholdT.toString(),
-                          n: overview.config.thresholdN.toString(),
-                        })}
-                      </span>
-                      <span className="dim">{t("DKG finalized")}</span>
-                      <span className="mono">{overview.isDKGFinalized ? t("Yes") : t("No")}</span>
-                      <span className="dim"><Term id="Election Public Key">{t("Election Public Key")}</Term></span>
-                      <span><Hex value={overview.dkg.pkElection} trim={24} /></span>
-                      <span className="dim"><Term id="Whitelist Registrar">{t("Whitelist Registrar Key")}</Term></span>
-                      <span><Hex value={overview.config.pkWR} trim={24} /></span>
-                    </div>
+                    {renderStageHeader(1, STAGE_ITEMS[0].title, <Term id={STAGE_ITEMS[0].subLabel}>{STAGE_ITEMS[0].subLabel}</Term>, STAGE_ITEMS[0].desc, STAGE_ITEMS[0].easyDesc)}
+                    {isEasy ? (
+                      <>
+                        <div className="stageDataGrid">
+                          <span className="dim"><Term id="Threshold">{t("Threshold")}</Term></span>
+                          <span>{t("{{t}} of {{n}} — no single guardian can act alone", {
+                            t: overview.config.thresholdT.toString(),
+                            n: overview.config.thresholdN.toString(),
+                          })}</span>
+                          <span className="dim">{t("DKG finalized")}</span>
+                          <span>{overview.isDKGFinalized ? t("Yes") : t("No")}</span>
+                          <span className="dim"><Term id="Election Public Key">{t("Election Public Key")}</Term></span>
+                          <span>{t("A shared lock that seals every ballot. Anyone can use it to seal a vote — only the guardians together can ever open it.")}</span>
+                          <span className="dim"><Term id="Whitelist Registrar">{t("Whitelist Registrar Key")}</Term></span>
+                          <span>{t("Confirms each voter is on the official eligibility list.")}</span>
+                        {overview.config.keyperAddresses.length > 0 && (
+                            <>
+                              <span className="dim"><Term id="Keyper committee">{t("Keyper Committee")}</Term></span>
+                              <span>{t("A total of {{n}} guardians have performed the Distributed Key Generation (DKG).", { n: overview.config.keyperAddresses.length })}</span>
+                            </>
+                        )}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="stageDataGrid">
+                          <span className="dim"><Term id="Threshold">{t("Threshold")}</Term></span>
+                          <span className="mono">
+                            {t("{{t}} of {{n}} keypers", {
+                              t: overview.config.thresholdT.toString(),
+                              n: overview.config.thresholdN.toString(),
+                            })}
+                          </span>
+                          <span className="dim">{t("DKG finalized")}</span>
+                          <span className="mono">{overview.isDKGFinalized ? t("Yes") : t("No")}</span>
+                          <span className="dim"><Term id="Election Public Key">{t("Election Public Key")}</Term></span>
+                          <span><Hex value={overview.dkg.pkElection} trim={24} /></span>
+                          <span className="dim"><Term id="Whitelist Registrar">{t("Whitelist Registrar Key")}</Term></span>
+                          <span><Hex value={overview.config.pkWR} trim={24} /></span>
+                        </div>
 
-                    {overview.config.keyperAddresses.length > 0 && (
-                      <div className="keyperCommittee">
-                        <div className="keyperCommitteeTitle"><Term id="Keyper committee">{t("KEYPER COMMITTEE")}</Term></div>
-                        {overview.config.keyperAddresses.map((addr, i) => (
-                          <div key={addr} className="keyperRow mono">
-                            <span className="keyperRowIdx">#{i}</span>
-                            <span className="flex1"><Hex value={addr} trim={22} /></span>
+                        {overview.config.keyperAddresses.length > 0 && (
+                          <div className="keyperCommittee">
+                            <div className="keyperCommitteeTitle"><Term id="Keyper committee">{t("KEYPER COMMITTEE")}</Term></div>
+                            {overview.config.keyperAddresses.map((addr, i) => (
+                              <div key={addr} className="keyperRow mono">
+                                <span className="keyperRowIdx">#{i}</span>
+                                <span className="flex1"><Hex value={addr} trim={22} /></span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
@@ -1517,12 +1682,38 @@ export default function App() {
                 {/* ── STAGE 2: Voters cast encrypted ballots ── */}
                 {tab === "ballots" && (
                   <div className="stageDetail slideInRight">
-                    {renderStageHeader(2, STAGE_ITEMS[1].title, <Term id={STAGE_ITEMS[1].subLabel}>{STAGE_ITEMS[1].subLabel}</Term>, STAGE_ITEMS[1].desc)}
+                    {renderStageHeader(2, STAGE_ITEMS[1].title, <Term id={STAGE_ITEMS[1].subLabel}>{STAGE_ITEMS[1].subLabel}</Term>, STAGE_ITEMS[1].desc, STAGE_ITEMS[1].easyDesc)}
 
                     {stageLifecycle(2) === "pending" ? (
                       renderStageLocked(2)
                     ) : !isTriple && (!detailView || !detailBallot) ? (
                       <>
+
+                        {/* Pseudonym search — technical mode only */}
+                        {!isEasy && (
+                          <div className="blSearch">
+                            <svg className="blSearchIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                            </svg>
+                            <input
+                              type="text"
+                              className="blSearchInput"
+                              placeholder={t("Search by pseudonym")}
+                              value={ballotSearch}
+                              onChange={(e) => {
+                                const term = e.target.value;
+                                setBallotSearch(term);
+                                if (term && allBallots === null && !allBallotsLoading && selectedElection) {
+                                  void loadAllBallots(selectedElection, ballotsTotal);
+                                }
+                              }}
+                              spellCheck={false}
+                            />
+                            {ballotSearch && (
+                              <button type="button" className="blSearchClear" onClick={() => setBallotSearch("")} aria-label="Clear search">×</button>
+                            )}
+                          </div>
+                        )}
 
                         {/* Controls */}
                         <div className="blControls">
@@ -1545,50 +1736,90 @@ export default function App() {
                                 {t("{{n}} checking", { n: pageVerifyStats.checking })}
                               </span>
                             )}
-                            {ballots.length > 0 && <span className="blSummaryMeta">{t("on this page")}</span>}
-                            {ballotsLoading && pageVerifyStats.valid === 0 && pageVerifyStats.invalid === 0 && (
+                            {filteredBallots.length > 0 && (
+                              <span className="blSummaryMeta">
+                                {ballotSearch ? t("across all ballots") : t("on this page")}
+                              </span>
+                            )}
+                            {allBallotsLoading && (
+                              <span className="blSummaryMeta">{t("Searching all {{n}} ballots…", { n: ballotsTotal.toString() })}</span>
+                            )}
+                            {!ballotSearch && ballotsLoading && pageVerifyStats.valid === 0 && pageVerifyStats.invalid === 0 && (
                               <span className="blSummaryMeta">{t("Loading…")}</span>
                             )}
                           </div>
-                          <div className="blPagination">
-                            <button
-                              type="button"
-                              onClick={() => void exportElectionBallotsFixture()}
-                              disabled={loadingElections || ballotsLoading || exportingFixture}
-                              style={{ fontSize: 12 }}
-                            >
-                              {exportingFixture ? t("Exporting…") : t("Export Ballots")}
-                            </button>
-                            <span className="badge statPill">{t("total {{n}}", { n: ballotsTotal.toString() })}</span>
-                            <span className="badge statPill">{t("page size {{n}}", { n: pageSize })}</span>
-                            <span className="badge statPill">{t("page {{n}}/{{total}}", { n: page + 1, total: safeTotalPages })}</span>
-                            <div className="gotoPill">
-                              <div className="gotoPillLabel">{t("go to")}</div>
-                              <input
-                                inputMode="numeric"
-                                type="number"
-                                value={gotoPageInput}
-                                onChange={(e) => setGotoPageInput(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") { applyGotoPage(); (e.currentTarget as HTMLInputElement).blur(); }
-                                }}
-                                placeholder={`${page + 1}`}
-                                style={{ width: 70, padding: "8px 10px" }}
-                                min={1}
-                              />
+                          {!ballotSearch ? (
+                            <div className="blPagination">
+                              {!isEasy && (
+                                <button
+                                  type="button"
+                                  onClick={() => void exportElectionBallotsFixture()}
+                                  disabled={loadingElections || ballotsLoading || exportingFixture}
+                                  style={{ fontSize: 12 }}
+                                >
+                                  {exportingFixture ? t("Exporting…") : t("Export Ballots")}
+                                </button>
+                              )}
+                              <span className="badge statPill">{t("total {{n}}", { n: ballotsTotal.toString() })}</span>
+                              <span className="badge statPill">{t("page size {{n}}", { n: pageSize })}</span>
+                              <span className="badge statPill">{t("page {{n}}/{{total}}", { n: page + 1, total: safeTotalPages })}</span>
+                              <div className="gotoPill">
+                                <div className="gotoPillLabel">{t("go to")}</div>
+                                <input
+                                  inputMode="numeric"
+                                  type="number"
+                                  value={gotoPageInput}
+                                  onChange={(e) => setGotoPageInput(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") { applyGotoPage(); (e.currentTarget as HTMLInputElement).blur(); }
+                                  }}
+                                  placeholder={`${page + 1}`}
+                                  style={{ width: 70, padding: "8px 10px" }}
+                                  min={1}
+                                />
+                              </div>
+                              <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}>{t("Prev")}</button>
+                              <button onClick={() => setPage((p) => Math.min(safeTotalPages - 1, p + 1))} disabled={page + 1 >= safeTotalPages}>{t("Next")}</button>
                             </div>
-                            <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}>{t("Prev")}</button>
-                            <button onClick={() => setPage((p) => Math.min(safeTotalPages - 1, p + 1))} disabled={page + 1 >= safeTotalPages}>{t("Next")}</button>
-                          </div>
+                          ) : (
+                            allBallots && (
+                              <span className="dim" style={{ fontSize: 12 }}>
+                                {t("{{n}} of {{total}} match", { n: filteredBallots.length, total: allBallots.length })}
+                              </span>
+                            )
+                          )}
                         </div>
 
                         {/* Ballot rows */}
+                        {ballotSearch && allBallotsLoading && (
+                          <p className="dim" style={{ padding: "16px 0", fontSize: 13 }}>
+                            {t("Loading…")}
+                          </p>
+                        )}
+                        {filteredBallots.length === 0 && ballotSearch && !allBallotsLoading && allBallots !== null && (
+                          <p className="dim" style={{ padding: "16px 0", fontSize: 13 }}>
+                            {t("No ballots match that prefix.")}
+                          </p>
+                        )}
                         <div className="blList">
-                          {ballots.map((b, index) => {
+                          {filteredBallots.map((b, index) => {
                             const k = b.pseudonym;
                             const v: VerifyState = resolveBallotVerifyState(selectedElection || undefined, k);
-                            const globalIndex = page * pageSize + index;
-                            return (
+                            const globalIndex = ballotSearch && allBallots
+                              ? allBallots.indexOf(b)
+                              : page * pageSize + index;
+                            return isEasy ? (
+                              <div key={`ballot-${k}`} className="blRow blRow--static">
+                                <div className="blRowIndex">
+                                  <div className="blRowIndexLabel">index {globalIndex}</div>
+                                </div>
+                                <div className="blRowStatus" style={{ marginLeft: "auto" }}>
+                                  {v.status === "ok" && <span className="badge ok">{t("VALID")}</span>}
+                                  {v.status === "bad" && <span className="badge bad" title={v.reason}>{t("INVALID")}</span>}
+                                  {v.status === "verifying" && <span className="badge warn">Checking…</span>}
+                                </div>
+                              </div>
+                            ) : (
                               <div
                                 key={`ballot-${k}`}
                                 className="blRow"
@@ -1625,10 +1856,12 @@ export default function App() {
                             );
                           })}
                         </div>
-                        <p className="blHelpText">
-                          Verification checks the WR attestation, ZK proofs, voter Schnorr signature, and basic field decoding.
-                          Runs automatically when the page loads. Click any ballot to see its cryptographic details.
-                        </p>
+                        {!isEasy && (
+                          <p className="blHelpText">
+                            Verification checks the WR attestation, ZK proofs, voter Schnorr signature, and basic field decoding.
+                            Runs automatically when the page loads. Click any ballot to see its cryptographic details.
+                          </p>
+                        )}
                       </>
                     ) : !isTriple ? (
                       <BallotDetail
@@ -1637,6 +1870,8 @@ export default function App() {
                         verifyState={detailVerifyState}
                         onBack={() => { setDetailView(null); setShowVerifyPanel(false); }}
                         onVerifyLocally={() => setShowVerifyPanel(true)}
+                        txHash={ballotTxHash}
+                        explorerUrl={import.meta.env.VITE_EXPLORER_URL as string | undefined}
                       />
                     ) : null}
                   </div>
@@ -1645,7 +1880,7 @@ export default function App() {
                 {/* ── STAGE 3: Encrypted vote counting ── */}
                 {tab === "aggregate" && (
                   <div className="stageDetail slideInRight">
-                    {renderStageHeader(3, STAGE_ITEMS[2].title, <Term id={STAGE_ITEMS[2].subLabel}>{STAGE_ITEMS[2].subLabel}</Term>, STAGE_ITEMS[2].desc)}
+                    {renderStageHeader(3, STAGE_ITEMS[2].title, <Term id={STAGE_ITEMS[2].subLabel}>{STAGE_ITEMS[2].subLabel}</Term>, STAGE_ITEMS[2].desc, STAGE_ITEMS[2].easyDesc)}
                     {stageLifecycle(3) === "pending" ? (
                       <>
                         {renderStageLocked(3)}
@@ -1654,38 +1889,61 @@ export default function App() {
                     ) : !aggregate ? (
                       <>
                         <p className="stageAwaitingData dim">
-                          {t("No aggregate published yet. The tally aggregator will homomorphically sum accepted ballots after voting closes.")}
+                          {isEasy
+                            ? t("The sealed vote totals haven't been published yet. They will appear here once voting ends.")
+                            : t("No aggregate published yet. The tally aggregator will homomorphically sum accepted ballots after voting closes.")}
                         </p>
                         {renderVerifySection(3)}
                       </>
                     ) : (
                       <>
                         {!isTriple && (
-                          <>
-                            <div className="stageCountBadge">
-                              {t("candidates: {{n}}", { n: aggregate.aggregates.length })}
-                            </div>
-                            <div className="dataCardList">
-                              {aggregate.aggregates.map((ct, j) => (
-                                <div key={j} className="dataCard candidateBlock mono">
-                                  <div className="candidateBlockLabel">{t("candidate {{n}}", { n: j })}</div>
-                                  <div className="candidateBlockData">
-                                    <div className="candidateCipherRow">
-                                      <span className="dim">c1</span>
-                                      <Hex value={ct.c1} trim={24} />
-                                    </div>
-                                    <div className="candidateCipherRow">
-                                      <span className="dim">c2</span>
-                                      <Hex value={ct.c2} trim={24} />
+                          isEasy ? (
+                            <>
+                              <div className="stageCountBadge">
+                                {t("candidates: {{n}}", { n: aggregate.aggregates.length })}
+                              </div>
+                              <div className="dataCardList">
+                                {aggregate.aggregates.map((_, j) => (
+                                  <div key={j} className="dataCard candidateBlock">
+                                    <div className="candidateBlockLabel mono">{t("Candidate {{n}}", { n: j })}</div>
+                                    <div style={{ fontSize: 12, marginTop: 6 }}>
+                                      {t("Sealed total — hidden until guardians unlock")}
                                     </div>
                                   </div>
-                                </div>
-                              ))}
-                            </div>
-                            <p className="dim helpFootnote" style={{ marginTop: 20 }}>
-                              {t("The aggregate is the encrypted combined vote per candidate: every accepted ballot ciphertext is added together (homomorphic encrypted sum). You still only see ciphertexts here · the actual vote counts stay hidden until keypers submit decryption shares.")}
-                            </p>
-                          </>
+                                ))}
+                              </div>
+                              <p className="dim helpFootnote" style={{ marginTop: 16 }}>
+                                {t("All votes were added together while still sealed — like counting closed envelopes without opening any. The totals stay hidden until the guardians work together to open them.")}
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <div className="stageCountBadge">
+                                {t("candidates: {{n}}", { n: aggregate.aggregates.length })}
+                              </div>
+                              <div className="dataCardList">
+                                {aggregate.aggregates.map((ct, j) => (
+                                  <div key={j} className="dataCard candidateBlock mono">
+                                    <div className="candidateBlockLabel">{t("candidate {{n}}", { n: j })}</div>
+                                    <div className="candidateBlockData">
+                                      <div className="candidateCipherRow">
+                                        <span className="dim">c1</span>
+                                        <Hex value={ct.c1} trim={24} />
+                                      </div>
+                                      <div className="candidateCipherRow">
+                                        <span className="dim">c2</span>
+                                        <Hex value={ct.c2} trim={24} />
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              <p className="dim helpFootnote" style={{ marginTop: 20 }}>
+                                {t("The aggregate is the encrypted combined vote per candidate: every accepted ballot ciphertext is added together (homomorphic encrypted sum). You still only see ciphertexts here · the actual vote counts stay hidden until keypers submit decryption shares.")}
+                              </p>
+                            </>
+                          )
                         )}
                         {renderVerifySection(3)}
                       </>
@@ -1696,7 +1954,7 @@ export default function App() {
                 {/* ── STAGE 4: Threshold decryption ── */}
                 {tab === "shares" && (
                   <div className="stageDetail slideInRight">
-                    {renderStageHeader(4, STAGE_ITEMS[3].title, <Term id={STAGE_ITEMS[3].subLabel}>{STAGE_ITEMS[3].subLabel}</Term>, STAGE_ITEMS[3].desc)}
+                    {renderStageHeader(4, STAGE_ITEMS[3].title, <Term id={STAGE_ITEMS[3].subLabel}>{STAGE_ITEMS[3].subLabel}</Term>, STAGE_ITEMS[3].desc, STAGE_ITEMS[3].easyDesc)}
                     {stageLifecycle(4) === "pending" ? (
                       <>
                         {renderStageLocked(4)}
@@ -1707,13 +1965,49 @@ export default function App() {
                     ) : shares.length === 0 ? (
                       <>
                         <p className="stageAwaitingData dim">
-                          {t("No decryption shares submitted yet. Keypers publish one share per candidate once the aggregate is on-chain.")}
+                          {isEasy
+                            ? t("No guardian has submitted their piece yet.")
+                            : t("No decryption shares submitted yet. Keypers publish one share per candidate once the aggregate is on-chain.")}
                         </p>
                         {renderVerifySection(4)}
                       </>
                     ) : (
                       <>
                         {!isTriple && (<>
+                        {isEasy ? (
+                          <>
+                            <div className="stageCountBadge">
+                              {t("{{n}} of {{total}} guardians contributed", {
+                                n: shares.length,
+                                total: overview.config.thresholdN.toString(),
+                              })}
+                            </div>
+                            <div className="dataCardList">
+                              {shares.map((sh, rowIdx) => (
+                                <div key={rowIdx} className="dataCard shareBlock">
+                                  <div className="shareBlockHeader">
+                                    <span className="shareBlockKeyper">
+                                      <span className="shareBlockKeyperIndex">#{sh.keyperIndex}</span>
+                                      <span className="shareBlockKeyperLabel"> {t("Guardian")}</span>
+                                    </span>
+                                    <span className="shareBlockSubmitted">
+                                      <span className="shareBlockSubmittedLabel">{t("Submitted")}</span>
+                                      <span className="shareBlockSubmittedTime">{formatUnixUtc(sh.submittedAt)} UTC</span>
+                                    </span>
+                                  </div>
+                                  <p style={{ fontSize: 12, marginTop: 6, marginLeft: 16 }}>
+                                    {t("Contributed their piece of the key — checked and verified.")}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                            <p className="dim helpFootnote" style={{ marginTop: 16 }}>
+                              {t("Each guardian holds one piece. Once {{t}} pieces are combined, the sealed totals are opened and the real vote counts appear.", {
+                                t: overview.config.thresholdT.toString(),
+                              })}
+                            </p>
+                          </>
+                        ) : (<>
                         <div className="stageCountBadge">
                           {t("shares submitted: {{n}}", { n: shares.length })}
                         </div>
@@ -1808,6 +2102,7 @@ export default function App() {
                           {t("Verify DLEQ checks that a keyper's decryption share matches the published aggregate ciphertext and that keyper's committee public key · their piece of the decryption was computed correctly, without exposing private key material.")}
                         </p>
                         </>)}
+                        </>)}
                         {renderVerifySection(4)}
                       </>
                     )}
@@ -1817,7 +2112,7 @@ export default function App() {
                 {/* ── STAGE 5: Final tally published ── */}
                 {tab === "result" && (
                   <div className="stageDetail slideInRight">
-                    {renderStageHeader(5, STAGE_ITEMS[4].title, <Term id={STAGE_ITEMS[4].subLabel}>{STAGE_ITEMS[4].subLabel}</Term>, STAGE_ITEMS[4].desc)}
+                    {renderStageHeader(5, STAGE_ITEMS[4].title, <Term id={STAGE_ITEMS[4].subLabel}>{STAGE_ITEMS[4].subLabel}</Term>, STAGE_ITEMS[4].desc, STAGE_ITEMS[4].easyDesc)}
                     {stageLifecycle(5) === "pending" ? (
                       <>
                         {renderStageLocked(5)}
@@ -1874,6 +2169,7 @@ export default function App() {
                     globalIndex={detailView.globalIndex}
                     overview={overview}
                     selectedElection={selectedElection}
+                    onAddToClaude={() => setShowAiSkill(true)}
                   />
                 </div>
               )}
@@ -1883,6 +2179,7 @@ export default function App() {
                     aggregate={aggregate}
                     onDownloadFixture={downloadAggregateFixture}
                     downloading={downloadingAggFixture}
+                    onAddToClaude={() => setShowAiSkill(true)}
                   />
                 </div>
               )}
@@ -1893,6 +2190,7 @@ export default function App() {
                     aggregate={aggregate}
                     shares={shares}
                     selectedElection={selectedElection}
+                    onAddToClaude={() => setShowAiSkill(true)}
                   />
                 </div>
               )}
@@ -1905,6 +2203,7 @@ export default function App() {
                     result={result}
                     totalBallots={overviewBallotTotal}
                     selectedElection={selectedElection}
+                    onAddToClaude={() => setShowAiSkill(true)}
                   />
                 </div>
               )}

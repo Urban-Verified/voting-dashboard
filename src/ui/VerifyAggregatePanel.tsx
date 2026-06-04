@@ -8,26 +8,54 @@ type Props = {
   aggregate: EncryptedTally;
   onDownloadFixture: () => Promise<void>;
   downloading: boolean;
+  onAddToClaude?: () => void;
 };
 
-export function VerifyAggregatePanel({ aggregate, onDownloadFixture, downloading }: Props) {
+export function VerifyAggregatePanel({ aggregate, onDownloadFixture, downloading, onAddToClaude }: Props) {
   const { t } = useTranslation();
   const fixtureFilename = "aggregate-fixture.json";
   const scriptName = "verify-aggregate.js";
 
-  const installCmd = `npm install ${SDK_PACKAGE}`;
+  const installCmd = `npm install ${SDK_PACKAGE} viem`;
 
   const scriptCode = [
-    `const { initCurves, G2Point, sumCts } = require("${SDK_PACKAGE}");`,
+    `const { initCurves, G1Point, G2Point, schnorrVerify, verifyBallot, sumCts } = require("${SDK_PACKAGE}");`,
     `const { readFileSync } = require("node:fs");`,
-    `const fromHex = (h) => Uint8Array.from(Buffer.from(String(h).replace(/^0x/, ""), "hex"));`,
+    `const { keccak256 } = require("viem");`,
+    `const fromHex   = (h) => Uint8Array.from(Buffer.from(String(h).replace(/^0x/, ""), "hex"));`,
     `const g2FromHex = (h) => G2Point.fromBytes(fromHex(h));`,
+    `const electionId32 = (id) => fromHex(BigInt(id).toString(16).padStart(64, "0"));`,
+    `const makeWrVerifier = (pkWr) => {`,
+    `  const wrVk = G1Point.fromBytes(pkWr);`,
+    `  return (electionIdBytes, pseudonym, vk, att) => {`,
+    `    if (electionIdBytes.length !== 32 || pseudonym.length !== 32 || vk.length !== 48) return false;`,
+    `    try {`,
+    `      let s = 0n; for (let i = 48; i < 80; i++) s = (s << 8n) + BigInt(att[i]);`,
+    `      return schnorrVerify(wrVk, fromHex(keccak256(Buffer.concat([Buffer.from(electionIdBytes), Buffer.from(pseudonym), Buffer.from(vk)]))), { R: G1Point.fromBytes(att.subarray(0, 48)), s });`,
+    `    } catch { return false; }`,
+    `  };`,
+    `};`,
     `async function main() {`,
     `  const f = JSON.parse(readFileSync("${fixtureFilename}", "utf8"));`,
     `  await initCurves();`,
+    `  const mpk        = g2FromHex(f.mpkElectionG2);`,
+    `  const wrVerifier = makeWrVerifier(fromHex(f.pkWrG1));`,
+    `  const config     = { numCandidates: f.numCandidates, budget: f.budget, mode: f.mode ?? "exact", variant: f.variant ?? "A" };`,
+    `  const electionIdBytes = electionId32(f.electionId);`,
+    `  // Filter to locally valid ballots — mirrors what the on-chain aggregator does.`,
+    `  const validBallots = f.ballots.filter((b) => {`,
+    `    const res = verifyBallot(`,
+    `      { electionId: electionIdBytes, pseudonym: fromHex(b.pseudonym), vk: fromHex(b.vk),`,
+    `        ciphertexts: b.ciphertexts.map(({ c1, c2 }) => [fromHex(c1), fromHex(c2)]),`,
+    `        zkProof: fromHex(b.zkProof), voterSignature: fromHex(b.voterSignature), wrAttestation: fromHex(b.wrAttestation) },`,
+    `      config, mpk, wrVerifier,`,
+    `    );`,
+    `    return res.ok;`,
+    `  });`,
+    `  console.log(\`Using \${validBallots.length} of \${f.ballots.length} ballots (locally valid)\`);`,
     `  let ok = true;`,
     `  for (let j = 0; j < f.numCandidates; j++) {`,
-    `    const sum = sumCts(f.ballots.map((b) => ({ c1: g2FromHex(b.ciphertexts[j].c1), c2: g2FromHex(b.ciphertexts[j].c2) })));`,
+    `    const sum = sumCts(validBallots.map((b) => ({ c1: g2FromHex(b.ciphertexts[j].c1), c2: g2FromHex(b.ciphertexts[j].c2) })));`,
     `    const pub = { c1: g2FromHex(f.aggregate[j].c1), c2: g2FromHex(f.aggregate[j].c2) };`,
     `    const match = sum.c1.equals(pub.c1) && sum.c2.equals(pub.c2);`,
     `    if (!match) ok = false;`,
@@ -42,7 +70,7 @@ export function VerifyAggregatePanel({ aggregate, onDownloadFixture, downloading
   const candidateLines = aggregate.aggregates
     .map((_, j) => `Candidate ${j}: ✓ match`)
     .join("\n");
-  const expectedOutput = `${candidateLines}\n\n✓ Aggregate verified`;
+  const expectedOutput = `Using N of N ballots (locally valid)\n${candidateLines}\n\n✓ Aggregate verified`;
 
   return (
     <div className="vpInline" role="region" aria-label={t("Aggregate verification guide")}>
@@ -52,6 +80,14 @@ export function VerifyAggregatePanel({ aggregate, onDownloadFixture, downloading
           <div className="vpHeaderSub">{t("{{n}} candidate ciphertexts", { n: aggregate.aggregates.length })}</div>
         </div>
       </div>
+      {onAddToClaude && (
+        <div className="vpAiSection">
+          <span className="vpAiOr">{t("or verify the whole election using your AI agent")}</span>
+          <button type="button" className="vpAiBtn" onClick={onAddToClaude}>
+            {t("Add to your AI agent")}
+          </button>
+        </div>
+      )}
 
       <div className="vpBody">
         <p className="vpIntro">

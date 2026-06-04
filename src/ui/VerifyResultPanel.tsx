@@ -11,9 +11,10 @@ type Props = {
   result: ElectionResult;
   totalBallots: bigint;
   selectedElection: string;
+  onAddToClaude?: () => void;
 };
 
-export function VerifyResultPanel({ overview, aggregate, shares, result, totalBallots, selectedElection }: Props) {
+export function VerifyResultPanel({ overview, aggregate, shares, result, totalBallots, selectedElection, onAddToClaude }: Props) {
   const { t } = useTranslation();
   const fixtureFilename = "result-fixture.json";
   const scriptName = "verify-result.js";
@@ -103,6 +104,15 @@ export function VerifyResultPanel({ overview, aggregate, shares, result, totalBa
           </div>
         </div>
       </div>
+
+      {onAddToClaude && (
+        <div className="vpAiSection">
+          <span className="vpAiOr">{t("or verify the whole election using your AI agent")}</span>
+          <button type="button" className="vpAiBtn" onClick={onAddToClaude}>
+            {t("Add to your AI agent")}
+          </button>
+        </div>
+      )}
 
       <div className="vpBody">
         <p className="vpIntro">

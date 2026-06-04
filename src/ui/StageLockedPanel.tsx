@@ -17,16 +17,26 @@ const LOCKED_HINT: Record<number, string> = {
   5: "Once a threshold of keyper shares is combined, the decrypted vote count per candidate will appear here · together with the winner and the final per-candidate pie chart.",
 };
 
+const LOCKED_HINT_EASY: Record<number, string> = {
+  1: "The guardians need to finish setting up the election lock first.",
+  2: "Once voting starts, the sealed votes will appear here.",
+  3: "Once voting ends, the vote totals will appear here, still sealed.",
+  4: "Once the totals are published, the guardians will begin unlocking the final count.",
+  5: "Once enough guardians contribute their piece, the final vote counts will appear here.",
+};
+
 type Props = {
   stageNum: number;
   waitingOn: WaitingOnStage[];
   votingStart: bigint;
   votingEnd: bigint;
+  isEasy?: boolean;
 };
 
-export function StageLockedPanel({ stageNum, waitingOn, votingStart, votingEnd }: Props) {
+export function StageLockedPanel({ stageNum, waitingOn, votingStart, votingEnd, isEasy }: Props) {
   const { t } = useTranslation();
-  const hint = t(LOCKED_HINT[stageNum] ?? "This stage will unlock once earlier steps complete.");
+  const hintMap = isEasy ? LOCKED_HINT_EASY : LOCKED_HINT;
+  const hint = t(hintMap[stageNum] ?? "This stage will unlock once earlier steps complete.");
 
   return (
     <div className="stageLockedCard">
