@@ -9,10 +9,9 @@ type Props = {
   globalIndex: number;
   overview: { config: ElectionConfigView; dkg: DkgResultView };
   selectedElection: string;
-  onAddToClaude?: () => void;
 };
 
-export function VerifyBallotPanel({ ballot, globalIndex, overview, selectedElection, onAddToClaude }: Props) {
+export function VerifyBallotPanel({ ballot, globalIndex, overview, selectedElection }: Props) {
   const { t } = useTranslation();
   const fixtureFilename = `ballot-${globalIndex}-fixture.json`;
   const scriptName = `verify-ballot-${globalIndex}.js`;
@@ -88,15 +87,6 @@ export function VerifyBallotPanel({ ballot, globalIndex, overview, selectedElect
           <div className="vpHeaderSub">{t("Ballot Index {{n}}", { n: globalIndex })}</div>
         </div>
       </div>
-
-      {onAddToClaude && (
-        <div className="vpAiSection">
-          <span className="vpAiOr">{t("or verify the whole election using your AI agent")}</span>
-          <button type="button" className="vpAiBtn" onClick={onAddToClaude}>
-            {t("Add to your AI agent")}
-          </button>
-        </div>
-      )}
 
       <div className="vpBody">
         <p className="vpIntro">

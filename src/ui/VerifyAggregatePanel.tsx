@@ -8,10 +8,9 @@ type Props = {
   aggregate: EncryptedTally;
   onDownloadFixture: () => Promise<void>;
   downloading: boolean;
-  onAddToClaude?: () => void;
 };
 
-export function VerifyAggregatePanel({ aggregate, onDownloadFixture, downloading, onAddToClaude }: Props) {
+export function VerifyAggregatePanel({ aggregate, onDownloadFixture, downloading }: Props) {
   const { t } = useTranslation();
   const fixtureFilename = "aggregate-fixture.json";
   const scriptName = "verify-aggregate.js";
@@ -80,15 +79,6 @@ export function VerifyAggregatePanel({ aggregate, onDownloadFixture, downloading
           <div className="vpHeaderSub">{t("{{n}} candidate ciphertexts", { n: aggregate.aggregates.length })}</div>
         </div>
       </div>
-      {onAddToClaude && (
-        <div className="vpAiSection">
-          <span className="vpAiOr">{t("or verify the whole election using your AI agent")}</span>
-          <button type="button" className="vpAiBtn" onClick={onAddToClaude}>
-            {t("Add to your AI agent")}
-          </button>
-        </div>
-      )}
-
       <div className="vpBody">
         <p className="vpIntro">
           {t("Confirm that the on-chain aggregate is exactly the homomorphic sum of every accepted ballot · no ballot added twice, none omitted.")}

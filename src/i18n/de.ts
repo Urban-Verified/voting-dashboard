@@ -12,7 +12,26 @@
 
 export const de: Record<string, string> = {
   // ── Top bar ─────────────────────────────────────────────────────────────
+  "Add to AI agent": "Zum KI-Agenten hinzufügen",
   "Refresh": "Aktualisieren",
+
+  // ── Add to AI agent page ────────────────────────────────────────────────
+  "Back": "Zurück",
+  "Add to your AI assistant": "Zu Ihrem KI-Assistenten hinzufügen",
+  "Let an AI agent verify this election independently": "Lassen Sie einen KI-Agenten diese Wahl unabhängig verifizieren",
+  "Copy the skill below into": "Fügen Sie den Skill unten ein in",
+  "or any AI agent with shell access and a terminal. The agent will fetch all election data directly from the blockchain and run every cryptographic check autonomously — no backend, no trust in this dashboard required.":
+    "oder einen beliebigen KI-Agenten mit Shell-Zugang und Terminal. Der Agent ruft alle Wahldaten direkt von der Blockchain ab und führt jeden kryptografischen Check autonom durch — kein Backend, kein Vertrauen in dieses Dashboard erforderlich.",
+  "Fetch from chain": "Von der Blockchain abrufen",
+  "Verify ballots": "Stimmzettel verifizieren",
+  "Verify aggregate": "Aggregat verifizieren",
+  "Verify shares": "Anteile verifizieren",
+  "Verify tally": "Ergebnis verifizieren",
+  "Copy Skill": "Skill kopieren",
+  "Copied!": "Kopiert!",
+  "Download .md": ".md herunterladen",
+  "Then paste into your AI agent and say: follow this skill": "In Ihren KI-Agenten einfügen und sagen: follow this skill",
+  "Copy": "Kopieren",
   "Refreshing…": "Wird aktualisiert…",
   "Error:": "Fehler:",
 
@@ -61,8 +80,10 @@ export const de: Record<string, string> = {
   "WHAT YOU CAN DO NOW": "WAS SIE JETZT TUN KÖNNEN",
   "Every stage has completed. The result is published and fully verifiable.":
     "Alle Phasen sind abgeschlossen. Das Ergebnis ist veröffentlicht und vollständig nachprüfbar.",
-  "Open any stage on the left to inspect what happened, then use the right column to re-run that step yourself.":
+  "Open any stage below to inspect what happened, then use the right column to re-run that step yourself.":
     "Öffnen Sie links eine Phase, um nachzusehen, was passiert ist, und nutzen Sie die rechte Spalte, um diesen Schritt selbst zu wiederholen.",
+  "Open any stage below to inspect what happened.":
+    "Öffnen Sie links eine Phase, um nachzusehen, was passiert ist.",
   "Voting hasn't opened yet": "Die Abstimmung hat noch nicht begonnen",
   "Opens today": "Öffnet heute",
   "Voting closing now": "Abstimmung schließt jetzt",
@@ -303,6 +324,15 @@ export const de: Record<string, string> = {
     "Jeder hält ein Stück des Schlüssels. {{t}} von {{n}} müssen zusammenarbeiten — kein einzelner Hüter kann das Ergebnis allein freigeben.",
   "Guardian {{n}}": "Hüter {{n}}",
 
+  // Stage 2 ballot stats (easy)
+  "votes received": "Stimmen eingegangen",
+  "Checking all {{n}} votes…": "Alle {{n}} Stimmen werden geprüft…",
+  "{{n}} checked and valid": "{{n}} geprüft und gültig",
+  "{{n}} being checked…": "{{n}} werden geprüft…",
+  "{{n}} did not pass": "{{n}} ungültig",
+  "Every vote is sealed. Nobody can open it or see the choice inside — not even the election organizers.":
+    "Jede Stimme ist versiegelt. Niemand kann sie öffnen oder den Inhalt sehen — nicht einmal die Wahlorganisatoren.",
+
   // Stage 3 aggregate analogy view (easy)
   "Sealed total — hidden until guardians unlock": "Versiegelte Summe — verborgen bis die Hüter öffnen",
   "All votes were added together while still sealed — like counting closed envelopes without opening any. The totals stay hidden until the guardians work together to open them.":
@@ -511,4 +541,42 @@ export const de: Record<string, string> = {
     "Die ersten t geprüften Anteile werden per Lagrange kombiniert, um die Verschlüsselungsmaske vom Aggregat-Chiffretext jeder/jedes Kandidat:in zu entfernen · ohne den vollständigen privaten Schlüssel jemals zusammenzusetzen.",
   "After decryption, a discrete-log solver recovers the integer vote count from a G₂ point. The search space is bounded by totalBallots × budget.":
     "Nach der Entschlüsselung gewinnt ein Diskreter-Logarithmus-Solver die Stimmzahl als Ganzzahl aus einem G₂-Punkt zurück. Der Suchraum ist durch totalBallots × budget begrenzt.",
+
+  // Top-bar global search
+  "Search ballots…": "Stimmen suchen…",
+
+  // Easy mode trust cards
+  "Fully public": "Vollständig öffentlich",
+  "Every step on record": "Jeder Schritt dokumentiert",
+  "Fully private": "Vollständig privat",
+  "Your vote stays sealed": "Ihre Stimme bleibt versiegelt",
+
+  // Easy mode stage cards (DKG, Aggregate, Shares)
+  "Election lock is ready": "Wahlschloss bereit",
+  "Setting up the election lock…": "Wahlschloss wird eingerichtet…",
+  "{{t}} of {{n}} guardians must work together to unlock the result — no single person can do it alone.":
+    "{{t}} von {{n}} Hütern müssen gemeinsam arbeiten, um das Ergebnis zu entsperren — keine Einzelperson kann es allein.",
+  "All votes bundled together": "Alle Stimmen gebündelt",
+  "All votes were added up while still sealed — like stacking closed envelopes without opening any. The counts stay hidden until the guardians unlock them.":
+    "Alle Stimmen wurden noch versiegelt addiert — wie das Stapeln geschlossener Umschläge. Die Zählungen bleiben verborgen, bis die Hüter sie entsperren.",
+  "Candidate {{n}}": "Kandidat:in {{n}}",
+  "sealed": "versiegelt",
+  "needed": "benötigt",
+  "Enough pieces collected! The final counts can now be revealed.":
+    "Genügend Teile gesammelt! Die endgültigen Zählungen können nun enthüllt werden.",
+  "{{remaining}} more pieces needed before the result can be opened.":
+    "Noch {{remaining}} Teile benötigt, bevor das Ergebnis geöffnet werden kann.",
+
+  // Easy mode journey status lines
+  "Lock ready": "Schloss bereit",
+  "Setting up…": "Wird eingerichtet…",
+  "Voting open": "Abstimmung läuft",
+  "Votes bundled": "Stimmen gebündelt",
+  "Counting…": "Wird gezählt…",
+  "{{count}} of {{total}} guardians": "{{count}} von {{total}} Hütern",
+  "Decrypting…": "Wird entschlüsselt…",
+  "Results revealed": "Ergebnis veröffentlicht",
+  "Revealing…": "Wird enthüllt…",
+  "Not started": "Noch nicht gestartet",
+  "{{n}} votes received": "{{n}} Stimmen eingegangen",
 };

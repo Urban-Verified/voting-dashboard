@@ -120,6 +120,7 @@ button, input, select, textarea {
 }
 
 .topBarRegistry {
+  height: 30px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -136,6 +137,27 @@ button, input, select, textarea {
   font-size: 20 px;
   font-weight: 400;
   color: var(--text);
+}
+
+.topBarAiBtn {
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 0;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 1px 2px var(--shadow);
+}
+
+.topBarAiBtn:hover {
+  background: rgba(0,0,0,0.04);
+  color: var(--muted);
 }
 
 .topBarRefreshBtn {
@@ -161,6 +183,120 @@ button, input, select, textarea {
 .topBarRefreshBtn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+/* ── Top-bar global search ───────────────────────────────────────────────── */
+.topBarSearchWrap {
+  position: relative;
+  width: 260px;
+  flex-shrink: 0;
+}
+
+.topBarSearchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #f8f9fb;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.topBarSearchBox--active,
+.topBarSearchBox:focus-within {
+  border-color: var(--accent);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(0, 68, 164, 0.08);
+}
+
+.topBarSearchIcon {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.topBarSearchInput {
+  flex: 1;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  color: var(--text);
+  font-family: "Plus Jakarta Sans", ui-monospace, monospace;
+  min-width: 0;
+}
+
+.topBarSearchInput::placeholder {
+  color: var(--muted);
+}
+
+.topBarSearchClear {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+.topBarSearchClear:hover {
+  color: var(--text);
+}
+
+.topBarSearchDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
+  z-index: 200;
+  overflow: hidden;
+}
+
+.topBarSearchMeta {
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.topBarSearchResult {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.1s;
+  border-bottom: 1px solid var(--border);
+}
+
+.topBarSearchResult:last-child {
+  border-bottom: 0;
+}
+
+.topBarSearchResult:hover {
+  background: rgba(0, 68, 164, 0.04);
+}
+
+.topBarSearchResultIndex {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  flex-shrink: 0;
+  min-width: 32px;
+}
+
+.topBarSearchResultPseudo {
+  font-size: 12px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .langToggle {
@@ -393,6 +529,396 @@ button, input, select, textarea {
 
 .overviewBody {
   padding: 0 20px 32px;
+}
+
+/* ─── EASY MODE VIEWS ────────────────────────────────────────── */
+
+/* Animations */
+@keyframes easyCheckDraw {
+  from { stroke-dashoffset: 30; }
+  to   { stroke-dashoffset: 0;  }
+}
+@keyframes easyPulseDot {
+  0%, 100% { transform: scale(1);   opacity: 1; }
+  50%       { transform: scale(1.5); opacity: 0.55; }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes easySpinAnim {
+  to { transform: rotate(360deg); }
+}
+
+.easyCheckPath {
+  stroke-dasharray: 30;
+  animation: easyCheckDraw 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.easyPulsingDot {
+  display: block;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #fff;
+  animation: easyPulseDot 1.4s ease-in-out infinite;
+}
+
+.fadeUp {
+  animation: fadeUp 0.38s ease-out both;
+}
+
+/* Journey timeline */
+.easyJourney {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0 32px;
+}
+
+.easyJourneyStep {
+  display: flex;
+  gap: 18px;
+  cursor: pointer;
+  outline: none;
+}
+
+.easyJourneyStep:focus-visible .easyJourneyContent {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+.easyJourneyTrack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 46px;
+  flex-shrink: 0;
+  padding-top: 10px;
+}
+
+.easyJourneyCircle {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+
+.easyJourneyStep:hover .easyJourneyCircle {
+  transform: scale(1.08);
+}
+
+.easyJourneyCircle--done      { background: var(--green); }
+.easyJourneyCircle--in_progress { background: var(--accent); }
+.easyJourneyCircle--pending   { background: #e5e7eb; }
+
+.easyJourneyNum {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.easyJourneyLine {
+  width: 2px;
+  flex: 1;
+  min-height: 28px;
+  margin: 4px 0 -10px;
+  border-radius: 1px;
+}
+.easyJourneyLine--done    { background: var(--green); }
+.easyJourneyLine--pending { background: var(--border); }
+
+.easyJourneyContent {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  flex: 1;
+  min-width: 0;
+  min-height: 46px;
+  transition: background 0.12s;
+}
+.easyJourneyStep:hover .easyJourneyContent { background: rgba(0,0,0,0.03); }
+
+.easyJourneyIcon { flex-shrink: 0; }
+.easyJourneyIcon--done        { color: var(--green); }
+.easyJourneyIcon--in_progress { color: var(--accent); }
+.easyJourneyIcon--pending     { color: var(--border-strong); }
+
+.easyJourneyText { flex: 1; min-width: 0; }
+
+.easyJourneyTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.easyJourneyStatus {
+  font-size: 13px;
+  margin-top: 2px;
+}
+.easyJourneyStatus--done        { color: var(--green); }
+.easyJourneyStatus--in_progress { color: var(--accent); font-weight: 500; }
+.easyJourneyStatus--pending     { color: var(--muted); }
+
+.easyJourneyArrow {
+  color: var(--muted);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.easyJourneyDetail {
+  margin-top: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.1px;
+}
+
+/* Stage card (used by DKG, Aggregate, Shares, Ballots detail views) */
+.easyStageCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 32px 24px 28px;
+  text-align: center;
+}
+
+.easyStageCardIcon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.easyStageCardIcon--done     { background: rgba(22, 163, 74, 0.1); color: var(--green); }
+.easyStageCardIcon--progress { background: rgba(0, 68, 164, 0.1);  color: var(--accent); }
+
+.easyStageCardStatus {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.easyStageCardStatus--ok { color: var(--green); }
+
+.easyStageCardDesc {
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 400px;
+  line-height: 1.65;
+  margin: 0;
+}
+.easyStageCardDesc--ok { color: var(--green); font-weight: 500; }
+
+/* Guardian chips */
+.easyGuardianRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.easyGuardianChip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 13px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  animation: fadeUp 0.3s ease-out both;
+}
+.easyGuardianChip--active  { background: var(--green); color: #fff; }
+.easyGuardianChip--waiting { background: #f3f4f6; color: var(--muted); border: 1px dashed var(--border-strong); }
+/* default (no modifier) stays neutral */
+.easyGuardianChip:not(.easyGuardianChip--active):not(.easyGuardianChip--waiting) {
+  background: #f3f4f6; color: var(--muted);
+}
+
+/* Ballot stat */
+.easyBallotStat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.easyBallotNumber {
+  font-size: 64px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -4px;
+  line-height: 1;
+}
+
+.easyBallotLabel {
+  font-size: 15px;
+  color: var(--muted);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.easyBallotChecks {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
+.easyBallotCheckRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.easyBallotCheckRow--ok       { color: var(--green); }
+.easyBallotCheckRow--checking { color: var(--accent); }
+.easyBallotCheckRow--bad      { color: var(--red); }
+
+.easySpinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(0, 68, 164, 0.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: easySpinAnim 0.7s linear infinite;
+}
+
+/* Aggregate candidate list */
+.easyAggCandidateList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.easyAggCandidate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  background: #f9fafb;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text);
+  animation: fadeUp 0.3s ease-out both;
+}
+
+.easyAggCandidateSealed {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  background: #e5e7eb;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* Shares progress bar */
+.easySharesBarWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  max-width: 280px;
+}
+
+.easySharesBar {
+  width: 100%;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.easySharesBarFill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 4px;
+  transition: width 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.easySharesBarLabel {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── Easy mode trust badges ────────────────────────────────────────────── */
+@keyframes easyTrustPathDraw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes easyTrustGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 68, 164, 0.18); }
+  50%       { box-shadow: 0 0 0 8px rgba(0, 68, 164, 0); }
+}
+
+.easyTrustBadge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  height: 100%;
+  padding: 12px 8px;
+  animation: fadeUp 0.35s ease both;
+}
+
+.easyTrustBadgeIcon {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: easyTrustGlow 2.8s ease-in-out infinite 0.8s;
+}
+.easyTrustBadgeIcon--eye  { background: rgba(0, 68, 164, 0.09); color: var(--accent); }
+.easyTrustBadgeIcon--lock { background: rgba(22, 163, 74, 0.09); color: var(--green); }
+
+.easyTrustPath {
+  stroke-dasharray: 120;
+  stroke-dashoffset: 120;
+  animation: easyTrustPathDraw 0.7s ease forwards 0.15s;
+}
+.easyTrustCircle {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  animation: easyTrustPathDraw 0.4s ease forwards 0.65s;
+}
+.easyTrustShackle {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: easyTrustPathDraw 0.5s ease forwards 0.55s;
+}
+
+.easyTrustBadgeTitle {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.2px;
+}
+.easyTrustBadgeSub {
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .overviewQuote {

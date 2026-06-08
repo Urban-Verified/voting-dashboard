@@ -68,7 +68,12 @@ export function AddToClaudeView({ overview, selectedElection, onClose }: Props) 
       {/* Description */}
       <div className="atcDesc">
         <p>
-          {t("Copy the skill below into Claude Code, OpenClaw, or any AI agent with shell access and a terminal. The agent will fetch all election data directly from the blockchain and run every cryptographic check autonomously — no backend, no trust in this dashboard required.")}
+          {t("Copy the skill below into")}{" "}
+          <strong>Claude Code</strong>{", "}
+          <strong>Hermes</strong>{", "}
+          <strong>OpenClaw</strong>{", "}
+          <strong>Microsoft Scout</strong>
+          {", "}{t("or any AI agent with shell access and a terminal. The agent will fetch all election data directly from the blockchain and run every cryptographic check autonomously — no backend, no trust in this dashboard required.")}
         </p>
         <div className="atcStepPills">
           {[
@@ -88,6 +93,13 @@ export function AddToClaudeView({ overview, selectedElection, onClose }: Props) 
 
       {/* Actions */}
       <div className="atcActions">
+        <button type="button" className="atcDownloadBtn" onClick={handleDownload}>
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M6.5 1v8M3 6l3.5 3.5L10 6" />
+            <path d="M1 11h11" />
+          </svg>
+          {t("Download .md")}
+        </button>
         <button type="button" className="atcCopyBtn" onClick={handleCopy}>
           {copied ? (
             <>
@@ -106,15 +118,8 @@ export function AddToClaudeView({ overview, selectedElection, onClose }: Props) 
             </>
           )}
         </button>
-        <button type="button" className="atcDownloadBtn" onClick={handleDownload}>
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M6.5 1v8M3 6l3.5 3.5L10 6" />
-            <path d="M1 11h11" />
-          </svg>
-          {t("Download .md")}
-        </button>
         <span className="atcActionsHint">
-          {t("Then paste into Claude Code and say: \"follow this skill\"")}
+          {t("Then paste into your AI agent and say: follow this skill")}
         </span>
       </div>
 
