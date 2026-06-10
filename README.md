@@ -88,20 +88,55 @@ The top bar has a **mode toggle** (Easy / Technical). The chosen mode persists a
 
 ---
 
+## Page layout
+
+```
+┌─ Top bar ──────────────────────────────────────────────────────┐
+│  Election selector · Find my vote · Language · Easy/Technical  │
+└────────────────────────────────────────────────────────────────┘
+┌─ Election header (fixed, no tab) ──────────────────────────────┐
+│  Election selector                                             │
+│  Election title · Voting Opens/Closes · Candidates · Budget    │
+│  Key Guardians (t of n) · Easy/Technical switch                │
+└────────────────────────────────────────────────────────────────┘
+┌─ Persistent overview content (always visible) ─────────────────┐
+│  Trust section: "HOW THIS ELECTION IS KEPT HONEST"             │
+│  + current status / winner narrative                           │
+└────────────────────────────────────────────────────────────────┘
+┌─ Election phases (tabbed) ─────────────────────────────────────┐
+│  Stage 1 · Stage 2 · Stage 3 · Stage 4 · Stage 5              │
+└────────────────────────────────────────────────────────────────┘
+```
+
 ## Election phases
 
-The election lifecycle is displayed below the main panel as five sequential phases, each with a `done` / `in_progress` / `pending` badge. Selecting a phase that isn't reachable yet shows `StageLockedPanel` listing the prerequisite phases.
+Five sequential phase tabs, each with a `done` / `in_progress` / `pending` badge. Selecting a phase whose prerequisites aren't met shows `StageLockedPanel`.
 
-| Stage | Tab id | Title | Maps to |
+Stage 1 also shows the overview details (DKG setup, committee keys, `pkWR`, `pkElection`, keyper addresses).
+
+| Stage | Tab id | Title | Content |
 |-------|--------|-------|---------|
-| — | `overview` | Overview | Config, `pkWR`, `pkElection`, keyper addresses, current stage narrative + winner once finalized |
-| 1 | `dkg` | Encryption Keys Set Up | DKG finalization + committee keys |
+| 1 | `dkg` | Encryption Keys Set Up | Overview details (election config, committee keys, keyper addresses, `pkWR`) + DKG finalization |
 | 2 | `ballots` | Voters Cast Encrypted Ballots | Paginated ballots (`getBallots`, **page size 10**) + per-ballot verify |
 | 3 | `aggregate` | Encrypted Vote Counting | On-chain encrypted tally (`getAggregate`) + recomputable sum |
 | 4 | `shares` | Threshold Decryption | On-chain decryption shares + DLEQ verify |
 | 5 | `result` | Final Tally Published | Published tally vector (`getResult`) + pie chart |
 
 Stage 1 has no meaningful "in progress" window — DKG finalizes atomically on-chain, so it transitions `pending → done`.
+
+---
+
+## Find my vote
+
+After casting a ballot, a voter receives a **pseudonym** — a unique `0x…` code they can use to confirm their vote was recorded on-chain.
+
+The **"Find my vote"** button opens a modal with a short explanation of what a pseudonym is and a search input. As the voter types, the dashboard searches all ballots by pseudonym prefix and lists matches. Clicking any result navigates directly to that ballot's detail view for full cryptographic inspection.
+
+Entry points:
+- **Top bar** — visible whenever an election is selected and voting has opened or closed (`stageLifecycle(2) !== "pending"`).
+- **Stage 2 (Ballots tab)** — a contextual "Voted? Find my vote →" prompt appears above the ballot list in both easy and technical mode, at the moment a voter is most likely to want to confirm their submission.
+
+The button is hidden before voting opens so it doesn't appear for elections still in setup.
 
 ---
 

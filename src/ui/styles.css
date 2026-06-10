@@ -185,38 +185,140 @@ button, input, select, textarea {
   cursor: not-allowed;
 }
 
-/* ── Top-bar global search ───────────────────────────────────────────────── */
-.topBarSearchWrap {
-  position: relative;
-  width: 260px;
+/* ── Top-bar "Find my vote" button ──────────────────────────────────────── */
+.topBarFindVoteBtn {
+  height: 42px;
   flex-shrink: 0;
-}
-
-.topBarSearchBox {
   display: flex;
   align-items: center;
-  gap: 8px;
-  height: 40px;
-  padding: 0 10px;
+  gap: 6px;
+  padding: 0 14px;
+  border-radius: 8px;
+  background: var(--shutter-blue);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: 0 1px 2px var(--shadow);
+}
+
+.topBarFindVoteBtn:hover {
+  background: #fff;
+  color: var(--muted);
+}
+
+/* ── "Voted? Find my vote" prompt inside ballots tab ────────────────────── */
+.findVotePromptWrap {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 0 16px;
+}
+
+.findVotePromptBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: #f8f9fb;
-  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
 }
 
-.topBarSearchBox--active,
-.topBarSearchBox:focus-within {
+.findVotePromptBtn:hover {
+  background: rgba(0, 68, 164, 0.06);
+  border-color: var(--accent);
+}
+
+/* ── Find my vote modal ──────────────────────────────────────────────────── */
+.fmvOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 20px;
+}
+
+.fmvModal {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18);
+  width: 100%;
+  max-width: 500px;
+  padding: 28px 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fmvHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fmvTitle {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.fmvClose {
+  border: 0;
+  background: transparent;
+  font-size: 18px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: background 0.1s, color 0.1s;
+}
+
+.fmvClose:hover {
+  background: #f0f2f5;
+  color: var(--text);
+}
+
+.fmvDesc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.fmvInputWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 0 12px;
+  height: 44px;
+  background: #f8f9fb;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.fmvInputWrap:focus-within {
   border-color: var(--accent);
   background: #fff;
   box-shadow: 0 0 0 3px rgba(0, 68, 164, 0.08);
 }
 
-.topBarSearchIcon {
+.fmvInputIcon {
   color: var(--muted);
   flex-shrink: 0;
 }
 
-.topBarSearchInput {
+.fmvInput {
   flex: 1;
   border: 0;
   outline: none;
@@ -227,72 +329,61 @@ button, input, select, textarea {
   min-width: 0;
 }
 
-.topBarSearchInput::placeholder {
+.fmvInput::placeholder {
   color: var(--muted);
 }
 
-.topBarSearchClear {
+.fmvInputClear {
   border: 0;
   background: transparent;
   color: var(--muted);
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1;
   cursor: pointer;
   padding: 0 2px;
   flex-shrink: 0;
 }
 
-.topBarSearchClear:hover {
+.fmvInputClear:hover {
   color: var(--text);
 }
 
-.topBarSearchDropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
-  z-index: 200;
-  overflow: hidden;
+.fmvResults {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
-.topBarSearchMeta {
-  padding: 12px 14px;
+.fmvResultMeta {
+  padding: 10px 2px;
   font-size: 13px;
   color: var(--muted);
 }
 
-.topBarSearchResult {
+.fmvResultRow {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: 12px;
+  padding: 11px 10px;
+  border-radius: 8px;
   cursor: pointer;
   transition: background 0.1s;
-  border-bottom: 1px solid var(--border);
 }
 
-.topBarSearchResult:last-child {
-  border-bottom: 0;
+.fmvResultRow:hover {
+  background: rgba(0, 68, 164, 0.05);
 }
 
-.topBarSearchResult:hover {
-  background: rgba(0, 68, 164, 0.04);
-}
-
-.topBarSearchResultIndex {
+.fmvResultIndex {
   font-size: 11px;
   font-weight: 600;
   color: var(--muted);
   flex-shrink: 0;
-  min-width: 32px;
+  min-width: 36px;
 }
 
-.topBarSearchResultPseudo {
-  font-size: 12px;
+.fmvResultPseudo {
+  font-size: 13px;
   color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2312,7 +2403,7 @@ button {
   cursor: pointer;
 }
 
-button:hover:not(:disabled):not(.primary):not(.hexCopyBtn):not(.verifyYourselfBtn):not(.stageDetailTechLink):not(.topBarRefreshBtn) {
+button:hover:not(:disabled):not(.primary):not(.hexCopyBtn):not(.verifyYourselfBtn):not(.stageDetailTechLink):not(.topBarRefreshBtn):not(.topBarFindVoteBtn):not(.findVotePromptBtn):not(.fmvClose):not(.fmvInputClear) {
   background: rgba(0, 0, 0, 0.05);
 }
 

@@ -580,4 +580,12 @@ export const de: Record<string, string> = {
   "Revealing…": "Wird enthüllt…",
   "Not started": "Noch nicht gestartet",
   "{{n}} votes received": "{{n}} Stimmen eingegangen",
+
+  // Find my vote modal
+  "Find my vote": "Meine Stimme suchen",
+  "Voted? Find my vote →": "Abgestimmt? Meine Stimme suchen →",
+  "After voting, you received a pseudonym — a unique code starting with 0x. Paste it below to confirm your vote was recorded.":
+    "Nach der Stimmabgabe haben Sie ein Pseudonym erhalten — einen eindeutigen Code, der mit 0x beginnt. Fügen Sie ihn unten ein, um zu bestätigen, dass Ihre Stimme gezählt wurde.",
+  "Paste your pseudonym (0x…)": "Pseudonym einfügen (0x…)",
+  "No ballot found with that pseudonym.": "Kein Stimmzettel mit diesem Pseudonym gefunden.",
 };

@@ -317,9 +317,9 @@ export default function App() {
   const [overviewBallotTotal, setOverviewBallotTotal] = useState<bigint>(0n);
   const [showVerifyGuide, setShowVerifyGuide] = useState(false);
   const [downloadingAggFixture, setDownloadingAggFixture] = useState(false);
-  const [topBarSearch, setTopBarSearch] = useState("");
-  const topBarSearchRef = useRef<HTMLDivElement>(null);
-  // Set to true before navigating via top-bar search so loadBallotsPageFor
+  const [showFindMyVote, setShowFindMyVote] = useState(false);
+  const [findMyVoteQuery, setFindMyVoteQuery] = useState("");
+  // Set to true before navigating via "Find my vote" so loadBallotsPageFor
   // doesn't wipe the detailView we just set
   const keepDetailViewRef = useRef(false);
 
@@ -672,11 +672,11 @@ export default function App() {
     return { valid, invalid, checking };
   }, [allBallots, filteredBallots, verifyByPseudonym, selectedElection]);
 
-  const topBarFilteredBallots = useMemo(() => {
-    if (!topBarSearch || !allBallots) return [];
-    const q = topBarSearch.toLowerCase();
+  const findMyVoteResults = useMemo(() => {
+    if (!findMyVoteQuery || !allBallots) return [];
+    const q = findMyVoteQuery.toLowerCase();
     return allBallots.filter(b => b.pseudonym.toLowerCase().startsWith(q)).slice(0, 8);
-  }, [topBarSearch, allBallots]);
+  }, [findMyVoteQuery, allBallots]);
 
   useEffect(() => {
     void ensureCurvesReady();
@@ -688,16 +688,15 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rpcUrl, registryAddress]);
 
-  // Close top-bar search dropdown when clicking outside
+  // Close "Find my vote" modal on Escape key
   useEffect(() => {
-    function handleMouseDown(e: MouseEvent) {
-      if (topBarSearchRef.current && !topBarSearchRef.current.contains(e.target as Node)) {
-        setTopBarSearch("");
-      }
+    if (!showFindMyVote) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") { setShowFindMyVote(false); setFindMyVoteQuery(""); }
     }
-    document.addEventListener("mousedown", handleMouseDown);
-    return () => document.removeEventListener("mousedown", handleMouseDown);
-  }, []);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [showFindMyVote]);
 
   useEffect(() => {
     if (tab !== "ballots") return;
@@ -1387,77 +1386,18 @@ export default function App() {
 
         {!isEasy && <span className="topBarRegistry">Registry:&nbsp;<Hex value={registryAddress ?? ""} trim={8} /></span>}
 
-        {/* ── Global ballot search ── */}
-        {selectedElection && overview && (
-          <div className="topBarSearchWrap" ref={topBarSearchRef}>
-            <div className={`topBarSearchBox${topBarSearch ? " topBarSearchBox--active" : ""}`}>
-              <svg className="topBarSearchIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-              </svg>
-              <input
-                type="text"
-                className="topBarSearchInput"
-                placeholder={t("Search ballots…")}
-                value={topBarSearch}
-                spellCheck={false}
-                onChange={(e) => {
-                  const term = e.target.value;
-                  setTopBarSearch(term);
-                  if (term && allBallots === null && !allBallotsLoading && selectedElection) {
-                    void loadAllBallots(selectedElection, overviewBallotTotal || ballotsTotal);
-                  }
-                }}
-                onKeyDown={(e) => { if (e.key === "Escape") setTopBarSearch(""); }}
-              />
-              {topBarSearch && (
-                <button type="button" className="topBarSearchClear" onClick={() => setTopBarSearch("")} aria-label="Clear search">×</button>
-              )}
-            </div>
-            {topBarSearch && (
-              <div className="topBarSearchDropdown">
-                {allBallotsLoading && (
-                  <div className="topBarSearchMeta">{t("Loading…")}</div>
-                )}
-                {!allBallotsLoading && allBallots !== null && topBarFilteredBallots.length === 0 && (
-                  <div className="topBarSearchMeta">{t("No ballots match that prefix.")}</div>
-                )}
-                {topBarFilteredBallots.map((b) => {
-                  const globalIndex = allBallots?.indexOf(b) ?? 0;
-                  return (
-                    <div
-                      key={b.pseudonym}
-                      className="topBarSearchResult"
-                      role="button"
-                      tabIndex={0}
-                      onMouseDown={(e) => {
-                        e.preventDefault(); // prevent input blur before click
-                        keepDetailViewRef.current = true;
-                        navigateTo("ballots");
-                        setDetailView({ pseudonym: b.pseudonym, globalIndex });
-                        setShowVerifyPanel(false);
-                        setTopBarSearch("");
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          keepDetailViewRef.current = true;
-                          navigateTo("ballots");
-                          setDetailView({ pseudonym: b.pseudonym, globalIndex });
-                          setShowVerifyPanel(false);
-                          setTopBarSearch("");
-                        }
-                      }}
-                    >
-                      <span className="topBarSearchResultIndex">#{globalIndex}</span>
-                      <span className="topBarSearchResultPseudo mono">
-                        <Hex value={b.pseudonym} trim={16} copyable={false} />
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+        {/* ── Find my vote button — only once voting is open or done ── */}
+        {selectedElection && overview && stageLifecycle(2) !== "pending" && (
+          <button
+            type="button"
+            className="topBarFindVoteBtn"
+            onClick={() => setShowFindMyVote(true)}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+            </svg>
+            {t("Find my vote")}
+          </button>
         )}
 
         <div className="topBarRight">
@@ -1909,14 +1849,40 @@ export default function App() {
                     {stageLifecycle(2) === "pending" ? (
                       renderStageLocked(2)
                     ) : isEasy && !detailBallot ? (
-                      <EasyBallotsView
-                        total={Number(overviewBallotTotal || ballotsTotal)}
-                        valid={easyBallotStats.valid}
-                        invalid={easyBallotStats.invalid}
-                        checking={easyBallotStats.checking}
-                      />
+                      <>
+                        <EasyBallotsView
+                          total={Number(overviewBallotTotal || ballotsTotal)}
+                          valid={easyBallotStats.valid}
+                          invalid={easyBallotStats.invalid}
+                          checking={easyBallotStats.checking}
+                        />
+                        <div className="findVotePromptWrap">
+                          <button
+                            type="button"
+                            className="findVotePromptBtn"
+                            onClick={() => setShowFindMyVote(true)}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                            </svg>
+                            {t("Voted? Find my vote →")}
+                          </button>
+                        </div>
+                      </>
                     ) : !isTriple && (!detailView || !detailBallot) ? (
                       <>
+                        <div className="findVotePromptWrap">
+                          <button
+                            type="button"
+                            className="findVotePromptBtn"
+                            onClick={() => setShowFindMyVote(true)}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                            </svg>
+                            {t("Voted? Find my vote →")}
+                          </button>
+                        </div>
 
                         {/* Controls */}
                         <div className="blControls">
@@ -2355,6 +2321,100 @@ export default function App() {
       )}
 
       </div>{/* end .pageMain */}
+
+      {/* ═══ FIND MY VOTE MODAL ═══ */}
+      {showFindMyVote && (
+        <div
+          className="fmvOverlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t("Find my vote")}
+          onClick={() => { setShowFindMyVote(false); setFindMyVoteQuery(""); }}
+        >
+          <div className="fmvModal" onClick={(e) => e.stopPropagation()}>
+            <div className="fmvHeader">
+              <span className="fmvTitle">{t("Find my vote")}</span>
+              <button
+                type="button"
+                className="fmvClose"
+                aria-label={t("Close")}
+                onClick={() => { setShowFindMyVote(false); setFindMyVoteQuery(""); }}
+              >✕</button>
+            </div>
+            <p className="fmvDesc">
+              {t("After voting, you received a pseudonym — a unique code starting with 0x. Paste it below to confirm your vote was recorded.")}
+            </p>
+            <div className="fmvInputWrap">
+              <svg className="fmvInputIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+              </svg>
+              <input
+                type="text"
+                className="fmvInput"
+                placeholder={t("Paste your pseudonym (0x…)")}
+                value={findMyVoteQuery}
+                // eslint-disable-next-line jsx-a11y/no-autofocus
+                autoFocus
+                spellCheck={false}
+                onChange={(e) => {
+                  const q = e.target.value;
+                  setFindMyVoteQuery(q);
+                  if (q && allBallots === null && !allBallotsLoading && selectedElection) {
+                    void loadAllBallots(selectedElection, overviewBallotTotal || ballotsTotal);
+                  }
+                }}
+              />
+              {findMyVoteQuery && (
+                <button type="button" className="fmvInputClear" onClick={() => setFindMyVoteQuery("")} aria-label={t("Clear")}>×</button>
+              )}
+            </div>
+            <div className="fmvResults">
+              {findMyVoteQuery && allBallotsLoading && (
+                <div className="fmvResultMeta">{t("Loading…")}</div>
+              )}
+              {findMyVoteQuery && !allBallotsLoading && allBallots !== null && findMyVoteResults.length === 0 && (
+                <div className="fmvResultMeta">{t("No ballot found with that pseudonym.")}</div>
+              )}
+              {findMyVoteResults.map((b) => {
+                const globalIndex = allBallots?.indexOf(b) ?? 0;
+                return (
+                  <div
+                    key={b.pseudonym}
+                    className="fmvResultRow"
+                    role="button"
+                    tabIndex={0}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      keepDetailViewRef.current = true;
+                      navigateTo("ballots");
+                      setDetailView({ pseudonym: b.pseudonym, globalIndex });
+                      setShowVerifyPanel(false);
+                      setShowFindMyVote(false);
+                      setFindMyVoteQuery("");
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        keepDetailViewRef.current = true;
+                        navigateTo("ballots");
+                        setDetailView({ pseudonym: b.pseudonym, globalIndex });
+                        setShowVerifyPanel(false);
+                        setShowFindMyVote(false);
+                        setFindMyVoteQuery("");
+                      }
+                    }}
+                  >
+                    <span className="fmvResultIndex">#{globalIndex}</span>
+                    <span className="fmvResultPseudo mono">
+                      <Hex value={b.pseudonym} trim={20} copyable={false} />
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══ SITE FOOTER ═══ */}
       <footer className="siteFooter" aria-label="Credits">
