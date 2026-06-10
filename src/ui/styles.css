@@ -861,6 +861,20 @@ button, input, select, textarea {
   color: var(--muted);
 }
 
+/* ── Phase animations (easy mode stage detail) ─────────────────────────── */
+.phaseAnimWrap {
+  width: 100%;
+  padding: 4px 0 2px;
+}
+.phaseAnimSvg {
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  overflow: visible;
+}
+
 /* ── Easy mode trust badges ────────────────────────────────────────────── */
 @keyframes easyTrustPathDraw {
   to { stroke-dashoffset: 0; }

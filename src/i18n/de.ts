@@ -554,6 +554,7 @@ export const de: Record<string, string> = {
   // Easy mode stage cards (DKG, Aggregate, Shares)
   "Election lock is ready": "Wahlschloss bereit",
   "Setting up the election lock…": "Wahlschloss wird eingerichtet…",
+  "Guardians work together to create the election lock.": "Die Hüter arbeiten gemeinsam, um das Wahlschloss zu erstellen.",
   "{{t}} of {{n}} guardians must work together to unlock the result — no single person can do it alone.":
     "{{t}} von {{n}} Hütern müssen gemeinsam arbeiten, um das Ergebnis zu entsperren — keine Einzelperson kann es allein.",
   "All votes bundled together": "Alle Stimmen gebündelt",
