@@ -662,15 +662,19 @@ export default function App() {
   // Easy mode: stats across ALL ballots (falls back to current page while loading)
   const easyBallotStats = useMemo(() => {
     const source = allBallots ?? filteredBallots;
-    let valid = 0, invalid = 0, checking = 0;
+    const total = Number(overviewBallotTotal || ballotsTotal);
+    let valid = 0, invalid = 0;
     for (const b of source) {
       const v = resolveBallotVerifyState(selectedElection || undefined, b.pseudonym);
       if (v.status === "ok") valid++;
       else if (v.status === "bad") invalid++;
-      else if (v.status === "verifying") checking++;
     }
+    // checking = everything not yet confirmed — includes ballots in the WASM
+    // queue AND any new votes cast after allBallots was loaded, so the three
+    // numbers always sum to the on-chain total.
+    const checking = Math.max(0, total - valid - invalid);
     return { valid, invalid, checking };
-  }, [allBallots, filteredBallots, verifyByPseudonym, selectedElection]);
+  }, [allBallots, filteredBallots, verifyByPseudonym, selectedElection, overviewBallotTotal, ballotsTotal]);
 
   const findMyVoteResults = useMemo(() => {
     if (!findMyVoteQuery || !allBallots) return [];
@@ -768,6 +772,19 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEasy, tab, selectedElection, overview, allBallots, allBallotsLoading]);
 
+  // Easy mode: if the on-chain total grows beyond the loaded snapshot (new votes
+  // cast during an active election), cancel the current run and reload allBallots
+  // so the new votes get fetched and verified.
+  useEffect(() => {
+    if (!isEasy || !selectedElection || allBallotsLoading || allBallots === null) return;
+    const total = overviewBallotTotal || ballotsTotal;
+    if (total > BigInt(allBallots.length)) {
+      cancelBallotAutoVerify();
+      setAllBallots(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [overviewBallotTotal, ballotsTotal]);
+
   // If a detail view is requested but allBallots isn't loaded (e.g. top-bar search
   // from a tab where ballots haven't been fetched yet), load them now.
   useEffect(() => {
@@ -787,7 +804,7 @@ export default function App() {
     const snapshot = allBallots.slice();
     void runBallotAutoVerifyPage(session, selectedElection, snapshot);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allBallots, isEasy]);
+  }, [allBallots, isEasy, tab]);
 
   // When a ballot detail is opened (via top-bar search or off-page click), verify
   // that specific ballot if it hasn't been checked yet. Covers both modes.

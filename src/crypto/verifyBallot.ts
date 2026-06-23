@@ -4,6 +4,13 @@ import { keccak256 } from "viem";
 import { concatBytes, hexToBytes } from "./utils";
 import { ensureCurvesReady } from "./curves";
 
+// Explicit WASM heap release. The SDK exposes destroyWasm() once built from
+// the updated shutter-voting-sdk source; until the new npm package is published
+// this is a safe no-op (?.() skips the call if the method doesn't exist yet).
+function destroyPoint(p: G1Point | G2Point): void {
+  (p as any).destroyWasm?.();
+}
+
 let _verifyMutex: Promise<void> = Promise.resolve();
 
 /** Drop queued in-flight ballot crypto when the user leaves the ballots tab. */
@@ -51,8 +58,8 @@ function decodeSchnorr(sig: Uint8Array): { R: G1Point; s: bigint } {
   return { R: G1Point.fromBytes(Rb), s: bytesToBigIntBE(sb) };
 }
 
-function makeWrVerifier(pkWrG1Compressed: Uint8Array) {
-  const wrVk = G1Point.fromBytes(pkWrG1Compressed);
+// wrVk is passed in so the caller controls its lifetime and can destroyPoint() it.
+function makeWrVerifier(wrVk: G1Point) {
   return (
     electionId32: Uint8Array,
     pseudonym32: Uint8Array,
@@ -67,7 +74,9 @@ function makeWrVerifier(pkWrG1Compressed: Uint8Array) {
       return false;
     }
     const msg32 = hexToBytes(keccak256(concatBytes(electionId32, pseudonym32, vkBytes)));
-    return schnorrVerify(wrVk, msg32, decoded);
+    const result = schnorrVerify(wrVk, msg32, decoded);
+    destroyPoint(decoded.R);
+    return result;
   };
 }
 
@@ -107,9 +116,9 @@ export async function verifyBallotMvp(params: {
       if (c1.length !== 96 || c2.length !== 96) {
         throw new Error(`ciphertext[${i}] bad length`);
       }
-      // Ensure they are valid compressed points (throws if invalid)
-      G2Point.fromBytes(c1);
-      G2Point.fromBytes(c2);
+      // Validate on-curve then immediately free — only the raw bytes are needed downstream.
+      const c1Pt = G2Point.fromBytes(c1); destroyPoint(c1Pt);
+      const c2Pt = G2Point.fromBytes(c2); destroyPoint(c2Pt);
       return { c1, c2 };
     });
 
@@ -120,34 +129,36 @@ export async function verifyBallotMvp(params: {
     if (voterSig.length === 0) return { ok: false, reason: "voterSignature empty" };
     if (wrAtt.length === 0) return { ok: false, reason: "wrAttestation empty" };
 
-    const mpkG2 = new Uint8Array(mpkElectionG2);
-    const pkWr = new Uint8Array(pkWrG1);
+    // Create WASM objects at this scope so finally destroys them regardless of outcome.
+    const mpk = G2Point.fromBytes(new Uint8Array(mpkElectionG2));
+    const wrVk = G1Point.fromBytes(new Uint8Array(pkWrG1));
+    try {
+      const vr = verifyBallot(
+        {
+          electionId: electionId32,
+          pseudonym: pseudonym32,
+          vk: vkBytes,
+          ciphertexts: cts.map((ct) => [ct.c1, ct.c2] as const),
+          zkProof,
+          voterSignature: voterSig,
+          wrAttestation: wrAtt,
+        },
+        {
+          numCandidates,
+          budget,
+          mode: "exact",
+          variant: "A",
+        },
+        mpk,
+        makeWrVerifier(wrVk),
+      );
 
-    // Full SDK verification (proofs + Schnorr + WR attestation).
-    const mpk = G2Point.fromBytes(mpkG2);
-    const verifyWr = makeWrVerifier(pkWr);
-    const vr = verifyBallot(
-      {
-        electionId: electionId32,
-        pseudonym: pseudonym32,
-        vk: vkBytes,
-        ciphertexts: cts.map((ct) => [ct.c1, ct.c2] as const),
-        zkProof,
-        voterSignature: voterSig,
-        wrAttestation: wrAtt,
-      },
-      {
-        numCandidates,
-        budget,
-        mode: "exact",
-        variant: "A",
-      },
-      mpk,
-      verifyWr,
-    );
-
-    if (vr.ok === false) return { ok: false, reason: vr.reason };
-    return { ok: true };
+      if (vr.ok === false) return { ok: false, reason: vr.reason };
+      return { ok: true };
+    } finally {
+      destroyPoint(mpk);
+      destroyPoint(wrVk);
+    }
   });
 }
 

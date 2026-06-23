@@ -79,19 +79,30 @@ export async function verifyDecryptShareDleq(args: {
 
     const dkgKeyperIndex = args.memberIndex + 1;
     const t = makeOnchainDecryptTranscript(args.electionId, args.candidateIndex);
-    const ct: Ciphertext = {
-      c1: G2Point.fromBytes(c1b),
-      c2: G2Point.fromBytes(c2b),
-    };
-    const share: PartialDecryption = {
-      keyperIndex: dkgKeyperIndex,
-      sigma: G2Point.fromBytes(sigb),
-      proof: { e: modQ(args.proof.e), z: modQ(args.proof.z) },
-    };
-    const committeePK = G2Point.fromBytes(mpkb);
-    const ok = verifyDecryptionShare(ct, share, committeePK, t);
-    if (ok) return { ok: true as const };
-    return { ok: false as const, reason: "DLEQ verification failed (challenge mismatch or invalid proof)" };
+    let c1Pt: G2Point | null = null;
+    let c2Pt: G2Point | null = null;
+    let sigmaPt: G2Point | null = null;
+    let committeePK: G2Point | null = null;
+    try {
+      c1Pt = G2Point.fromBytes(c1b);
+      c2Pt = G2Point.fromBytes(c2b);
+      sigmaPt = G2Point.fromBytes(sigb);
+      committeePK = G2Point.fromBytes(mpkb);
+      const ct: Ciphertext = { c1: c1Pt, c2: c2Pt };
+      const share: PartialDecryption = {
+        keyperIndex: dkgKeyperIndex,
+        sigma: sigmaPt,
+        proof: { e: modQ(args.proof.e), z: modQ(args.proof.z) },
+      };
+      const ok = verifyDecryptionShare(ct, share, committeePK, t);
+      if (ok) return { ok: true as const };
+      return { ok: false as const, reason: "DLEQ verification failed (challenge mismatch or invalid proof)" };
+    } finally {
+      c1Pt?.destroyWasm();
+      c2Pt?.destroyWasm();
+      sigmaPt?.destroyWasm();
+      committeePK?.destroyWasm();
+    }
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     return { ok: false as const, reason: msg };
