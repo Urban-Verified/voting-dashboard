@@ -39,6 +39,8 @@ jobs:
         env:
           VITE_RPC_URL: ${{ vars.VITE_RPC_URL }}
           VITE_ELECTION_REGISTRY: ${{ vars.VITE_ELECTION_REGISTRY }}
+          VITE_EXPLORER_URL: ${{ vars.VITE_EXPLORER_URL }}
+          VITE_REGISTRY_DEPLOY_BLOCK: ${{ vars.VITE_REGISTRY_DEPLOY_BLOCK }}
         run: npm run build
 
       # The Vite-bundled SDK chunk lives in dist/assets/ and fetches
