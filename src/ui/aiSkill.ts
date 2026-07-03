@@ -33,7 +33,7 @@ export function buildElectionSkill(p: SkillParams): string {
 import { JsonRpcProvider, Contract } from "ethers";
 import { writeFileSync } from "node:fs";
 
-const RPC      = "${p.rpcUrl}";
+const RPC      = "${p.rpcUrl}"; // OR put any RPC URL of the network where voting is conducted.
 const ELECTION = "${p.electionAddress}";
 const ABI = ${abiJson};
 
@@ -88,8 +88,9 @@ console.log("wrote ballot-fixture.json");
 let aggregate = null;
 try {
   const aggRaw = await election.getAggregate();
-  if (aggRaw && aggRaw.aggregates && aggRaw.aggregates.length > 0) {
-    aggregate = [...aggRaw.aggregates].map(ct => ({ c1: ct.c1, c2: ct.c2 }));
+  const aggArray = aggRaw[0]; // ethers flattens the outer struct; [0] is the aggregates array
+  if (aggArray && aggArray.length > 0) {
+    aggregate = [...aggArray].map(ct => ({ c1: ct.c1, c2: ct.c2 }));
     writeFileSync("aggregate-fixture.json", JSON.stringify({ ...base, ballots: allBallots, aggregate }, null, 2));
     console.log("wrote aggregate-fixture.json");
   } else {
@@ -353,7 +354,7 @@ fixture file is absent — this is not an error.
 | Field | Value |
 |---|---|
 | Contract | \`${p.electionAddress}\` |
-| RPC | \`${p.rpcUrl}\` |
+| RPC URL | Put the RPC URL of the network where voting is conducted. You can use this one for example: \`${p.rpcUrl}\` |
 | Election ID | ${p.electionId} |
 | Candidates | ${p.numCandidates} |
 | Budget per voter | ${p.budget} point(s) |
