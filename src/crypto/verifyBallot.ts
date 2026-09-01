@@ -29,9 +29,11 @@ function runVerifyExclusive<T>(fn: () => Promise<T>): Promise<T> {
 
 function cloneBallot(ballot: Ballot): Ballot {
   return {
+    ballotIndex: ballot.ballotIndex,
     pseudonym: ballot.pseudonym,
     vk: ballot.vk,
     ciphertexts: ballot.ciphertexts.map((ct) => ({ c1: ct.c1, c2: ct.c2 })),
+    zkProofHash: ballot.zkProofHash,
     zkProof: ballot.zkProof,
     voterSignature: ballot.voterSignature,
     wrAttestation: ballot.wrAttestation,

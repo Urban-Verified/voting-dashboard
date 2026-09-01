@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode }
 import {
   fetchAggregate,
   fetchBallotsPage,
+  fetchBallotTotal,
   fetchBallotTxHash,
   fetchDecryptionShares,
   fetchElectionElectionId,
@@ -307,9 +308,9 @@ export default function App() {
   const [allBallotsLoading, setAllBallotsLoading] = useState(false);
   const [exportingFixture, setExportingFixture] = useState(false);
 
-  const [verifyByPseudonym, setVerifyByPseudonym] = useState<Record<string, VerifyState>>({});
+  const [verifyByBallot, setVerifyByBallot] = useState<Record<number, VerifyState>>({});
 
-  const [detailView, setDetailView] = useState<{ pseudonym: string; globalIndex: number } | null>(null);
+  const [detailView, setDetailView] = useState<{ pseudonym: string; ballotIndex: number; globalIndex: number } | null>(null);
   const [showVerifyPanel, setShowVerifyPanel] = useState(false);
   const [ballotTxHash, setBallotTxHash] = useState<string | null | undefined>(undefined);
 
@@ -360,7 +361,7 @@ export default function App() {
     autoVerifyStartedRef.current.clear();
     // Drop stale "verifying" entries so they don't stay stuck as "Checking…"
     // after the session is cancelled (e.g. page change, election change).
-    setVerifyByPseudonym((m) => {
+    setVerifyByBallot((m) => {
       const next: Record<string, VerifyState> = {};
       for (const [k, v] of Object.entries(m)) {
         if (v.status !== "verifying") next[k] = v;
@@ -372,7 +373,7 @@ export default function App() {
   function hydrateVerifyFromCache(electionAddr: string, pageBallots: Ballot[]) {
     const fromCache = applyCachedVerifyForBallots(electionAddr, pageBallots);
     if (Object.keys(fromCache).length === 0) return;
-    setVerifyByPseudonym((m) => {
+    setVerifyByBallot((m) => {
       const next = { ...m };
       for (const [k, v] of Object.entries(fromCache)) {
         const cur = next[k];
@@ -382,21 +383,21 @@ export default function App() {
     });
   }
 
-  function shouldShowBallotChecking(electionAddr: string | undefined, pseudonym: string): boolean {
+  function shouldShowBallotChecking(electionAddr: string | undefined, ballotIndex: number): boolean {
     if (!electionAddr || tab !== "ballots" || ballotsLoading) return false;
     if (overviewAddrRef.current !== electionAddr || ballotsAddrRef.current !== electionAddr) return false;
-    if (getCachedBallotVerify(electionAddr, pseudonym)) return false;
+    if (getCachedBallotVerify(electionAddr, ballotIndex)) return false;
     return true;
   }
 
-  function resolveBallotVerifyState(electionAddr: string | undefined, pseudonym: string): VerifyState {
-    const live = verifyByPseudonym[pseudonym];
+  function resolveBallotVerifyState(electionAddr: string | undefined, ballotIndex: number): VerifyState {
+    const live = verifyByBallot[ballotIndex];
     if (live?.status === "verifying" || live?.status === "ok" || live?.status === "bad") return live;
     if (electionAddr) {
-      const cached = getCachedBallotVerify(electionAddr, pseudonym);
+      const cached = getCachedBallotVerify(electionAddr, ballotIndex);
       if (cached) return cachedVerifyToUiState(cached);
     }
-    if (shouldShowBallotChecking(electionAddr, pseudonym)) {
+    if (shouldShowBallotChecking(electionAddr, ballotIndex)) {
       return { status: "verifying", token: 0 };
     }
     return { status: "idle" };
@@ -444,7 +445,7 @@ export default function App() {
       setSelectedElection(nextElection);
 
       cancelBallotAutoVerify();
-      setVerifyByPseudonym({});
+      setVerifyByBallot({});
       setDecVerifyByKey({});
       setDetailView(null);
       setShowVerifyPanel(false);
@@ -494,12 +495,12 @@ export default function App() {
     setLoadError(null);
     try {
       if (!provider) throw new Error("Missing VITE_RPC_URL");
-      const [ov, agg, decShares, res, ballotInfo] = await Promise.all([
+      const [ov, agg, decShares, res, ballotTotal] = await Promise.all([
         fetchElectionOverview(provider, electionAddr),
         fetchAggregate(provider, electionAddr),
         fetchDecryptionShares(provider, electionAddr),
         fetchResult(provider, electionAddr),
-        fetchBallotsPage(provider, electionAddr, 0, 1).catch(() => ({ total: 0n, ballots: [] })),
+        fetchBallotTotal(provider, electionAddr).catch(() => 0n),
       ]);
       if (gen !== electionLoadGenRef.current) return;
       setOverview(ov);
@@ -507,7 +508,7 @@ export default function App() {
       setAggregate(agg);
       setShares(decShares);
       setResult(res);
-      setOverviewBallotTotal(ballotInfo.total);
+      setOverviewBallotTotal(ballotTotal);
     } catch (e: unknown) {
       if (gen === electionLoadGenRef.current) setLoadError(errMsg(e));
     }
@@ -612,7 +613,7 @@ export default function App() {
   useEffect(() => {
     if (!selectedElection) return;
     cancelBallotAutoVerify();
-    setVerifyByPseudonym({});
+    setVerifyByBallot({});
     setDecVerifyByKey({});
     verifySeqRef.current += 1;
     setBallots([]);
@@ -650,14 +651,14 @@ export default function App() {
   const pageVerifyStats = useMemo(() => {
     let valid = 0, invalid = 0, checking = 0;
     for (const b of filteredBallots) {
-      const v = resolveBallotVerifyState(selectedElection || undefined, b.pseudonym);
+      const v = resolveBallotVerifyState(selectedElection || undefined, b.ballotIndex);
       if (v.status === "idle") continue;
       if (v.status === "ok") valid++;
       else if (v.status === "bad") invalid++;
       else if (v.status === "verifying") checking++;
     }
     return { valid, invalid, checking };
-  }, [filteredBallots, verifyByPseudonym, selectedElection, tab, ballotsLoading]);
+  }, [filteredBallots, verifyByBallot, selectedElection, tab, ballotsLoading]);
 
   // Easy mode: stats across ALL ballots (falls back to current page while loading)
   const easyBallotStats = useMemo(() => {
@@ -665,7 +666,7 @@ export default function App() {
     const total = Number(overviewBallotTotal || ballotsTotal);
     let valid = 0, invalid = 0;
     for (const b of source) {
-      const v = resolveBallotVerifyState(selectedElection || undefined, b.pseudonym);
+      const v = resolveBallotVerifyState(selectedElection || undefined, b.ballotIndex);
       if (v.status === "ok") valid++;
       else if (v.status === "bad") invalid++;
     }
@@ -674,7 +675,76 @@ export default function App() {
     // numbers always sum to the on-chain total.
     const checking = Math.max(0, total - valid - invalid);
     return { valid, invalid, checking };
-  }, [allBallots, filteredBallots, verifyByPseudonym, selectedElection, overviewBallotTotal, ballotsTotal]);
+  }, [allBallots, filteredBallots, verifyByBallot, selectedElection, overviewBallotTotal, ballotsTotal]);
+
+  /**
+   * Which ballot actually counts, per voter.
+   *
+   * A voter may submit more than once -- the contract appends a record per
+   * submission rather than replacing -- so counting every ballot would count
+   * that voter twice. The tally aggregator applies LATEST VALID: walk a
+   * pseudonym's ballots newest -> oldest and take the first that verifies.
+   * This mirrors that rule so the UI agrees with the published tally.
+   *
+   * Verification is asynchronous, so a ballot whose newer siblings are still
+   * being checked is "pending" rather than counted or superseded.
+   */
+  const ballotStatusByIndex = useMemo(() => {
+    const out = new Map<number, "counted" | "superseded" | "rejected" | "pending">();
+    // Selection is only meaningful over the WHOLE election. A single page
+    // cannot tell whether a newer ballot from the same voter exists, so a
+    // page-scoped guess would mark the newest ballot *on this page* as
+    // counted -- wrong whenever the voter's later ballots are on another
+    // page. Show nothing until the full set is loaded.
+    const source = allBallots;
+    if (!source || source.length === 0) return out;
+
+    const byPseudonym = new Map<string, Ballot[]>();
+    for (const b of source) {
+      const list = byPseudonym.get(b.pseudonym) ?? [];
+      list.push(b);
+      byPseudonym.set(b.pseudonym, list);
+    }
+
+    for (const [, list] of byPseudonym) {
+      const newestFirst = [...list].sort((x, y) => y.ballotIndex - x.ballotIndex);
+      let counted = false;    // a newer ballot already won -> the rest are superseded
+      let blocked = false;    // a newer ballot is still verifying -> cannot classify yet
+      for (const b of newestFirst) {
+        if (counted) { out.set(b.ballotIndex, "superseded"); continue; }
+        if (blocked) { out.set(b.ballotIndex, "pending"); continue; }
+        const v = resolveBallotVerifyState(selectedElection || undefined, b.ballotIndex);
+        if (v.status === "ok") {
+          out.set(b.ballotIndex, "counted");
+          counted = true;
+        } else if (v.status === "bad") {
+          // Rejected, NOT superseded: nothing newer replaced it, it simply
+          // failed. An older ballot may still be counted in its place.
+          out.set(b.ballotIndex, "rejected");
+        } else {
+          // Undecided until this one resolves -- if it turns out invalid, an
+          // older ballot becomes the counted one rather than superseded.
+          out.set(b.ballotIndex, "pending");
+          blocked = true;
+        }
+      }
+    }
+    return out;
+  }, [allBallots, verifyByBallot, selectedElection]);
+
+  /** Voters whose ballot is counted -- turnout, as opposed to ballots cast. */
+  const votersCounted = useMemo(() => {
+    let n = 0;
+    for (const s of ballotStatusByIndex.values()) if (s === "counted") n++;
+    return n;
+  }, [ballotStatusByIndex]);
+
+  /** Ballots not counted because a newer ballot from the same voter was. */
+  const supersededCount = useMemo(() => {
+    let n = 0;
+    for (const s of ballotStatusByIndex.values()) if (s === "superseded") n++;
+    return n;
+  }, [ballotStatusByIndex]);
 
   const findMyVoteResults = useMemo(() => {
     if (!findMyVoteQuery || !allBallots) return [];
@@ -763,20 +833,23 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredBallots, ballotSearch, selectedElection, overview]);
 
-  // Easy mode: load all ballots as soon as the ballots tab is opened
+  // Load all ballots as soon as the ballots tab is opened. Needed in every
+  // mode, not just easy: re-vote status (counted / superseded) can only be
+  // determined across the whole election, never from one page.
   useEffect(() => {
-    if (!isEasy || tab !== "ballots" || !selectedElection || !overview) return;
+    if (tab !== "ballots" || !selectedElection || !overview) return;
     if (!overview.isDKGFinalized || overview.phase < 3) return;
     if (allBallots !== null || allBallotsLoading) return;
     void loadAllBallots(selectedElection, overviewBallotTotal || ballotsTotal);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEasy, tab, selectedElection, overview, allBallots, allBallotsLoading]);
+  }, [tab, selectedElection, overview, allBallots, allBallotsLoading]);
 
-  // Easy mode: if the on-chain total grows beyond the loaded snapshot (new votes
-  // cast during an active election), cancel the current run and reload allBallots
-  // so the new votes get fetched and verified.
+  // If the on-chain total grows beyond the loaded snapshot (new votes cast
+  // during an active election), cancel the current run and reload allBallots.
+  // Every mode: a stale snapshot would show a ballot as "counted" when a newer
+  // one from the same voter has since landed.
   useEffect(() => {
-    if (!isEasy || !selectedElection || allBallotsLoading || allBallots === null) return;
+    if (!selectedElection || allBallotsLoading || allBallots === null) return;
     const total = overviewBallotTotal || ballotsTotal;
     if (total > BigInt(allBallots.length)) {
       cancelBallotAutoVerify();
@@ -794,9 +867,12 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detailView, selectedElection, allBallots, allBallotsLoading]);
 
-  // Easy mode: auto-verify all ballots once they're loaded
+  // Auto-verify all ballots once they're loaded, in every mode. Re-vote status
+  // needs verification results for a voter's *newer* ballots, which may sit on
+  // another page -- verifying only the current page leaves those groups stuck
+  // at "pending" and no badge ever appears.
   useEffect(() => {
-    if (!isEasy || tab !== "ballots" || !allBallots || allBallots.length === 0 || !selectedElection || !overview) return;
+    if (tab !== "ballots" || !allBallots || allBallots.length === 0 || !selectedElection || !overview) return;
     // Ensure ballotsAddrRef is set before isBallotVerifyActive is checked inside runBallotAutoVerifyPage
     ballotsAddrRef.current = selectedElection;
     hydrateVerifyFromCache(selectedElection, allBallots);
@@ -804,7 +880,7 @@ export default function App() {
     const snapshot = allBallots.slice();
     void runBallotAutoVerifyPage(session, selectedElection, snapshot);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allBallots, isEasy, tab]);
+  }, [allBallots, tab]);
 
   // When a ballot detail is opened (via top-bar search or off-page click), verify
   // that specific ballot if it hasn't been checked yet. Covers both modes.
@@ -838,22 +914,22 @@ export default function App() {
     if (!active || !overviewRef.current) return;
 
     const pending = ballotsToVerify.filter((b) => {
-      if (getCachedBallotVerify(electionAddr, b.pseudonym)) return false;
-      const startedKey = ballotVerifyCacheKey(electionAddr, b.pseudonym);
+      if (getCachedBallotVerify(electionAddr, b.ballotIndex)) return false;
+      const startedKey = ballotVerifyCacheKey(electionAddr, b.ballotIndex);
       if (autoVerifyStartedRef.current.has(startedKey)) return false;
       return true;
     });
     if (pending.length === 0) return;
 
     for (const b of pending) {
-      autoVerifyStartedRef.current.add(ballotVerifyCacheKey(electionAddr, b.pseudonym));
+      autoVerifyStartedRef.current.add(ballotVerifyCacheKey(electionAddr, b.ballotIndex));
     }
 
     const batchToken = ++verifySeqRef.current;
-    setVerifyByPseudonym((m) => {
+    setVerifyByBallot((m) => {
       const next = { ...m };
       for (const b of pending) {
-        next[b.pseudonym] = { status: "verifying", token: batchToken };
+        next[b.ballotIndex] = { status: "verifying", token: batchToken };
       }
       return next;
     });
@@ -875,10 +951,10 @@ export default function App() {
   ) {
     if (!isBallotVerifyActive(session, electionAddr) || !overviewRef.current) return;
     const token = presetToken ?? ++verifySeqRef.current;
-    const k = ballot.pseudonym;
+    const k = ballot.ballotIndex;
     const startedKey = ballotVerifyCacheKey(electionAddr, k);
     if (presetToken === undefined) {
-      setVerifyByPseudonym((m) => ({ ...m, [k]: { status: "verifying", token } }));
+      setVerifyByBallot((m) => ({ ...m, [k]: { status: "verifying", token } }));
     }
     try {
       const res = await enqueueVerify<BallotVerifyResult>(() => {
@@ -901,7 +977,7 @@ export default function App() {
       });
       if (!isBallotVerifyActive(session, electionAddr)) {
         autoVerifyStartedRef.current.delete(startedKey);
-        setVerifyByPseudonym((m) => {
+        setVerifyByBallot((m) => {
           const cur = m[k];
           if (!cur || cur.status !== "verifying" || cur.token !== token) return m;
           const next = { ...m };
@@ -912,7 +988,7 @@ export default function App() {
       }
       if (!res.ok && "reason" in res && res.reason === "__cancelled__") {
         autoVerifyStartedRef.current.delete(startedKey);
-        setVerifyByPseudonym((m) => {
+        setVerifyByBallot((m) => {
           const cur = m[k];
           if (!cur || cur.status !== "verifying" || cur.token !== token) return m;
           const next = { ...m };
@@ -923,7 +999,7 @@ export default function App() {
       }
       if (res.ok) {
         setCachedBallotVerify(electionAddr, k, { status: "ok" });
-        setVerifyByPseudonym((m) => {
+        setVerifyByBallot((m) => {
           const cur = m[k];
           if (!cur || cur.status !== "verifying" || cur.token !== token) return m;
           return { ...m, [k]: { status: "ok", token } };
@@ -932,7 +1008,7 @@ export default function App() {
         const reason = (res as Extract<BallotVerifyResult, { ok: false }>).reason;
         if (reason === "Election state still loading. Try again in a moment.") {
           autoVerifyStartedRef.current.delete(startedKey);
-          setVerifyByPseudonym((m) => {
+          setVerifyByBallot((m) => {
             const cur = m[k];
             if (!cur || cur.status !== "verifying" || cur.token !== token) return m;
             const next = { ...m };
@@ -942,7 +1018,7 @@ export default function App() {
           return;
         }
         setCachedBallotVerify(electionAddr, k, { status: "bad", reason });
-        setVerifyByPseudonym((m) => {
+        setVerifyByBallot((m) => {
           const cur = m[k];
           if (!cur || cur.status !== "verifying" || cur.token !== token) return m;
           return { ...m, [k]: { status: "bad", reason, token } };
@@ -955,7 +1031,7 @@ export default function App() {
       }
       const reason = errMsg(e);
       setCachedBallotVerify(electionAddr, k, { status: "bad", reason });
-      setVerifyByPseudonym((m) => {
+      setVerifyByBallot((m) => {
         const cur = m[k];
         if (!cur || cur.status !== "verifying" || cur.token !== token) return m;
         return { ...m, [k]: { status: "bad", reason, token } };
@@ -1044,12 +1120,12 @@ export default function App() {
 
   // Check current page first, then fall back to allBallots (covers off-page and top-bar search results)
   const detailBallot = detailView
-    ? (ballots.find((b) => b.pseudonym === detailView.pseudonym)
-        ?? allBallots?.find((b) => b.pseudonym === detailView.pseudonym)
+    ? (ballots.find((b) => b.ballotIndex === detailView.ballotIndex)
+        ?? allBallots?.find((b) => b.ballotIndex === detailView.ballotIndex)
         ?? null)
     : null;
   const detailVerifyState: VerifyState = detailView
-    ? resolveBallotVerifyState(selectedElection || undefined, detailView.pseudonym)
+    ? resolveBallotVerifyState(selectedElection || undefined, detailView.ballotIndex)
     : { status: "idle" };
 
   useEffect(() => {
@@ -1123,7 +1199,7 @@ export default function App() {
     let cancelled = false;
     const refreshBallotTotal = async () => {
       try {
-        const { total } = await fetchBallotsPage(provider, selectedElection, 0, 1);
+        const total = await fetchBallotTotal(provider, selectedElection);
         if (!cancelled) setOverviewBallotTotal(total);
       } catch {
         /* ignore background refresh errors */
@@ -1208,7 +1284,7 @@ export default function App() {
   function navigateTo(t: Tab) {
     if (t !== "ballots" && tabRef.current === "ballots") {
       cancelBallotAutoVerify();
-      setVerifyByPseudonym({});
+      setVerifyByBallot({});
     }
     if (t === "ballots") {
       setDetailView(null);
@@ -1349,9 +1425,14 @@ export default function App() {
           sub: t("Encryption committee finalized"),
         };
       case 2:
+        // Ballots != voters when anyone re-voted: the contract appends a
+        // record per submission, and only the latest valid one is counted.
         return {
           title: t("{{n}} ballots accepted", { n: overviewBallotTotal.toString() }),
-          sub: t("Voting closed"),
+          sub: supersededCount > 0
+            ? t("{{v}} voters counted · {{s}} superseded by a re-vote",
+                { v: votersCounted.toString(), s: supersededCount.toString() })
+            : t("Voting closed"),
         };
       case 3:
         return aggregate ? {
@@ -1987,7 +2068,7 @@ export default function App() {
                         )}
                         <div className="blList">
                           {filteredBallots.map((b, index) => {
-                            const k = b.pseudonym;
+                            const k = b.ballotIndex;
                             const v: VerifyState = resolveBallotVerifyState(selectedElection || undefined, k);
                             const globalIndex = ballotSearch && allBallots
                               ? allBallots.indexOf(b)
@@ -1999,11 +2080,11 @@ export default function App() {
                                 role="button"
                                 tabIndex={0}
                                 aria-label={`Ballot index ${globalIndex}`}
-                                onClick={() => { setDetailView({ pseudonym: k, globalIndex }); setShowVerifyPanel(false); }}
+                                onClick={() => { setDetailView({ pseudonym: b.pseudonym, ballotIndex: k, globalIndex }); setShowVerifyPanel(false); }}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter" || e.key === " ") {
                                     e.preventDefault();
-                                    setDetailView({ pseudonym: k, globalIndex });
+                                    setDetailView({ pseudonym: b.pseudonym, ballotIndex: k, globalIndex });
                                     setShowVerifyPanel(false);
                                   }
                                 }}
@@ -2024,6 +2105,11 @@ export default function App() {
                                   {v.status === "ok" && <span className="badge ok">{t("VALID")}</span>}
                                   {v.status === "bad" && <span className="badge bad" title={v.reason}>{t("INVALID")}</span>}
                                   {v.status === "verifying" && <span className="badge warn">Checking…</span>}
+                                  {ballotStatusByIndex.get(k) === "superseded" && (
+                                    <span className="badge" title={t("This voter submitted again later. Only their latest valid ballot is counted.")}>
+                                      {t("SUPERSEDED")}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             );
@@ -2043,6 +2129,7 @@ export default function App() {
                         onVerifyLocally={() => setShowVerifyPanel(true)}
                         txHash={ballotTxHash}
                         explorerUrl={import.meta.env.VITE_EXPLORER_URL as string | undefined}
+                        selection={ballotStatusByIndex.get(detailView.ballotIndex)}
                       />
                     ) : null}
                   </div>
@@ -2404,7 +2491,7 @@ export default function App() {
                       e.preventDefault();
                       keepDetailViewRef.current = true;
                       navigateTo("ballots");
-                      setDetailView({ pseudonym: b.pseudonym, globalIndex });
+                      setDetailView({ pseudonym: b.pseudonym, ballotIndex: b.ballotIndex, globalIndex });
                       setShowVerifyPanel(false);
                       setShowFindMyVote(false);
                       setFindMyVoteQuery("");
@@ -2414,7 +2501,7 @@ export default function App() {
                         e.preventDefault();
                         keepDetailViewRef.current = true;
                         navigateTo("ballots");
-                        setDetailView({ pseudonym: b.pseudonym, globalIndex });
+                        setDetailView({ pseudonym: b.pseudonym, ballotIndex: b.ballotIndex, globalIndex });
                         setShowVerifyPanel(false);
                         setShowFindMyVote(false);
                         setFindMyVoteQuery("");
@@ -2425,6 +2512,13 @@ export default function App() {
                     <span className="fmvResultPseudo mono">
                       <Hex value={b.pseudonym} trim={20} copyable={false} />
                     </span>
+                    {/* A re-voted pseudonym matches several ballots; say which one counts. */}
+                    {ballotStatusByIndex.get(b.ballotIndex) === "counted" && (
+                      <span className="badge ok">{t("COUNTED")}</span>
+                    )}
+                    {ballotStatusByIndex.get(b.ballotIndex) === "superseded" && (
+                      <span className="badge">{t("SUPERSEDED")}</span>
+                    )}
                   </div>
                 );
               })}

@@ -24,9 +24,17 @@ export type Ciphertext = {
 };
 
 export type Ballot = {
+  /**
+   * Position in the contract's ballotRecords array. The join key for logs and
+   * for re-vote ordering -- `pseudonym` is NOT unique, because the contract
+   * appends a record per submission rather than replacing.
+   */
+  ballotIndex: number;
   pseudonym: Hex; // bytes32
   vk: Hex; // bytes48
   ciphertexts: Ciphertext[]; // bytes96 each
+  /** keccak256(zkProof), read from contract storage. */
+  zkProofHash: Hex; // bytes32
   zkProof: Hex;
   voterSignature: Hex;
   wrAttestation: Hex;

@@ -3,7 +3,8 @@ const SDK = "@shutter-network/urban-verified-crypto";
 const ABI = [
   "function getElection() view returns (tuple(uint256 electionId,uint64 votingStart,uint64 votingEnd,uint256 selfSubmitFee,uint32 numCandidates,uint32 budget,uint64 thresholdN,uint64 thresholdT,address[] keyperAddresses,bytes pkWR) config, tuple(bytes pkElection,bytes[] committeePKs) dkgResult)",
   "function getNumBallots() view returns (uint256)",
-  "function getBallots(uint256 startIndex,uint256 count) view returns (tuple(bytes32 pseudonym,bytes vk,tuple(bytes c1,bytes c2)[] ciphertexts,bytes zkProof,bytes voterSignature,bytes wrAttestation)[])",
+  "function getBallots(uint256 startIndex,uint256 count) view returns (tuple(bytes32 pseudonym,bytes vk,tuple(bytes c1,bytes c2)[] ciphertexts,bytes32 zkProofHash,bytes voterSignature,bytes wrAttestation)[])",
+  "event VoteSubmitted(bytes32 indexed pseudonym, uint256 indexed ballotIndex, bytes zkProof)",
   "function getAggregate() view returns (tuple(tuple(bytes c1,bytes c2)[] aggregates))",
   "function getDecryptionShares() view returns (tuple(uint8 keyperIndex,uint64 submittedAt,bytes[] shares,tuple(uint256 e,uint256 z)[] proofs)[])",
   "function getResult() view returns (tuple(uint256[] tally,uint8[] keyperIndices))",
@@ -30,7 +31,7 @@ export function buildElectionSkill(p: SkillParams): string {
   const fetchScript = `\
 // fetch-data.mjs  —  fetches election data from the blockchain.
 // Detects which artifacts are available and only writes fixtures for those.
-import { JsonRpcProvider, Contract } from "ethers";
+import { JsonRpcProvider, Contract, keccak256 } from "ethers";
 import { writeFileSync } from "node:fs";
 
 const RPC      = "${p.rpcUrl}"; // OR put any RPC URL of the network where voting is conducted.
@@ -47,22 +48,47 @@ const [[cfg, dkg], totalBn] = await Promise.all([
 ]);
 
 const total = Number(totalBn);
+
+// Ballot zkProofs are NOT in contract storage -- storing them costs
+// 625 gas/byte and pushed submitVote past the block gas limit. Storage keeps
+// keccak256(zkProof); the bytes themselves are published in the
+// VoteSubmitted event, which is equally permanent (committed by the block
+// header's receiptsRoot). Recover them from logs and check each against its
+// commitment before use.
+console.log("Fetching ballot proofs from VoteSubmitted logs…");
+const proofLogs = await election.queryFilter(election.filters.VoteSubmitted(), 0, "latest");
+const proofByIndex = new Map(
+  proofLogs.map((log) => [Number(log.args.ballotIndex), log.args.zkProof]),
+);
+
 const BATCH = 100;
 const allBallots = [];
 for (let i = 0; i < Math.ceil(total / BATCH); i++) {
   const start = i * BATCH;
   const count = Math.min(BATCH, total - start);
   const page = await election.getBallots(start, count);
-  for (const b of page) {
+  page.forEach((b, j) => {
+    // ballotIndex is the join key -- pseudonym is NOT unique, because a
+    // re-vote appends another ballot record under the same pseudonym.
+    const index = start + j;
+    const zkProof = proofByIndex.get(index);
+    if (zkProof === undefined) {
+      throw new Error(\`ballot \${index}: no VoteSubmitted log carrying a proof\`);
+    }
+    if (keccak256(zkProof) !== b.zkProofHash) {
+      throw new Error(\`ballot \${index}: logged proof does not match on-chain commitment\`);
+    }
     allBallots.push({
+      ballotIndex: index,
       pseudonym: b.pseudonym,
       vk: b.vk,
       ciphertexts: b.ciphertexts.map(ct => ({ c1: ct.c1, c2: ct.c2 })),
-      zkProof: b.zkProof,
+      zkProofHash: b.zkProofHash,
+      zkProof,
       voterSignature: b.voterSignature,
       wrAttestation: b.wrAttestation,
     });
-  }
+  });
   console.log(\`  ballots: \${start + count}/\${total}\`);
 }
 
@@ -177,6 +203,14 @@ async function main() {
   const wrVerifier = makeWrVerifier(fromHex(f.pkWrG1));
   const config     = { numCandidates: f.numCandidates, budget: f.budget, mode: f.mode ?? "exact", variant: f.variant ?? "A" };
   const electionIdBytes = electionId32(f.electionId);
+  // The proof is not in contract storage -- only keccak256(zkProof) is. This
+  // check makes the fixture self-authenticating: its bytes provably match the
+  // commitment recorded on chain.
+  for (const b of f.ballots) {
+    if (b.zkProofHash && keccak256(fromHex(b.zkProof)) !== b.zkProofHash) {
+      throw new Error(\`ballot \${b.pseudonym}: proof does not match on-chain commitment\`);
+    }
+  }
   let allOk = true;
   for (let i = 0; i < f.ballots.length; i++) {
     const b = f.ballots[i];
@@ -227,15 +261,46 @@ async function main() {
   const wrVerifier = makeWrVerifier(fromHex(f.pkWrG1));
   const config     = { numCandidates: f.numCandidates, budget: f.budget, mode: f.mode ?? "exact", variant: f.variant ?? "A" };
   const electionIdBytes = electionId32(f.electionId);
-  const validBallots = f.ballots.filter((b) => {
-    const res = verifyBallot(
-      { electionId: electionIdBytes, pseudonym: fromHex(b.pseudonym), vk: fromHex(b.vk),
-        ciphertexts: b.ciphertexts.map(({ c1, c2 }) => [fromHex(c1), fromHex(c2)]),
-        zkProof: fromHex(b.zkProof), voterSignature: fromHex(b.voterSignature), wrAttestation: fromHex(b.wrAttestation) },
-      config, mpk, wrVerifier,
-    );
-    return res.ok;
-  });
+  // The proof is not in contract storage -- only keccak256(zkProof) is. This
+  // check makes the fixture self-authenticating: its bytes provably match the
+  // commitment recorded on chain.
+  for (const b of f.ballots) {
+    if (b.zkProofHash && keccak256(fromHex(b.zkProof)) !== b.zkProofHash) {
+      throw new Error(\`ballot \${b.pseudonym}: proof does not match on-chain commitment\`);
+    }
+  }
+  const isValid = (b) => verifyBallot(
+    { electionId: electionIdBytes, pseudonym: fromHex(b.pseudonym), vk: fromHex(b.vk),
+      ciphertexts: b.ciphertexts.map(({ c1, c2 }) => [fromHex(c1), fromHex(c2)]),
+      zkProof: fromHex(b.zkProof), voterSignature: fromHex(b.voterSignature), wrAttestation: fromHex(b.wrAttestation) },
+    config, mpk, wrVerifier,
+  ).ok;
+  // ---- Re-vote selection: LATEST VALID per pseudonym ----
+  // The contract appends a record per submission and repoints
+  // ballotIndexPlusOneByPseudonym at the newest, so one pseudonym can own
+  // several ballots; counting them all counts that voter twice. Walk each
+  // pseudonym newest -> oldest and take the first that verifies. This must
+  // match the tally aggregator exactly, or this script computes a different
+  // aggregate than the one published on chain.
+  const byPseudonym = new Map();
+  for (const b of f.ballots) {
+    const list = byPseudonym.get(b.pseudonym) ?? [];
+    list.push(b);
+    byPseudonym.set(b.pseudonym, list);
+  }
+  const validBallots = [];
+  let supersededCount = 0;
+  for (const [, list] of byPseudonym) {
+    list.sort((x, y) => y.ballotIndex - x.ballotIndex);   // newest first
+    const chosenPos = list.findIndex((b) => isValid(b));
+    if (chosenPos >= 0) {
+      validBallots.push(list[chosenPos]);
+      // Only OLDER ballots are superseded -- newer ones were tried and
+      // failed, so they are rejections, not replacements.
+      supersededCount += list.length - 1 - chosenPos;
+    }
+  }
+  if (supersededCount > 0) console.log(\`\${supersededCount} ballot(s) superseded by a re-vote\`);
   console.log(\`Using \${validBallots.length} of \${f.ballots.length} ballots (locally valid)\`);
   let ok = true;
   for (let j = 0; j < f.numCandidates; j++) {

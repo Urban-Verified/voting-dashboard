@@ -53,9 +53,14 @@ type Props = {
   onVerifyLocally: () => void;
   txHash?: string | null;
   explorerUrl?: string;
+  /**
+   * Whether this ballot is the one that counts for its voter. A voter may
+   * submit more than once; only their latest valid ballot is tallied.
+   */
+  selection?: "counted" | "superseded" | "rejected" | "pending";
 };
 
-export function BallotDetail({ ballot, globalIndex, verifyState, onBack, onVerifyLocally, txHash, explorerUrl }: Props) {
+export function BallotDetail({ ballot, globalIndex, verifyState, onBack, onVerifyLocally, txHash, explorerUrl, selection }: Props) {
   const { t } = useTranslation();
   const vs = verifyState.status;
   const iconType = vs === "ok" ? "ok" : vs === "bad" ? "bad" : vs === "verifying" ? "checking" : "idle";
@@ -69,6 +74,21 @@ export function BallotDetail({ ballot, globalIndex, verifyState, onBack, onVerif
 
       <div className="bdBallotLabel">{t("BALLOT")}</div>
       <h2 className="bdBallotIndex">{t("Index {{n}}", { n: globalIndex })}</h2>
+
+      {selection === "counted" && (
+        <div className="bdSelection">
+          <span className="badge ok">{t("COUNTED")}</span>
+          <span className="bdSelectionNote">{t("This is the ballot counted for this voter.")}</span>
+        </div>
+      )}
+      {selection === "superseded" && (
+        <div className="bdSelection">
+          <span className="badge warn">{t("SUPERSEDED")}</span>
+          <span className="bdSelectionNote">
+            {t("This voter submitted again later. Only their latest valid ballot is counted.")}
+          </span>
+        </div>
+      )}
 
       <div className="bdPseudonymRow">
         <span className="dim">pseudonym</span>

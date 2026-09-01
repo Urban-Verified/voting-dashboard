@@ -102,6 +102,14 @@ export const de: Record<string, string> = {
   "Closes in {{label}}": "Schließt in {{label}}",
   "{{n}} ballots cast so far": "Bisher {{n}} abgegebene Stimmen",
   "{{n}} ballots accepted": "{{n}} Stimmen angenommen",
+  "SUPERSEDED": "ERSETZT",
+  "COUNTED": "GEZÄHLT",
+  "This voter submitted again later. Only their latest valid ballot is counted.":
+    "Diese wählende Person hat später erneut abgestimmt. Nur der neueste gültige Stimmzettel wird gezählt.",
+  "{{v}} voters counted · {{s}} superseded by a re-vote":
+    "{{v}} Wählende gezählt · {{s}} durch erneute Stimmabgabe ersetzt",
+  "This is the ballot counted for this voter.":
+    "Dies ist der für diese wählende Person gezählte Stimmzettel.",
   "{{n}} ballots summed": "{{n}} Stimmen aufsummiert",
   "{{n}} total votes counted": "{{n}} Stimmen insgesamt gezählt",
   "{{count}} of {{total}} keyper shares received":
